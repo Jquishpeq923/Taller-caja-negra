@@ -1,7 +1,5 @@
 # Casos de Prueba de Caja Negra — presupuesto_analisis.py
 
-flowchart TD
-
     %% ==============================
     %% 🌸 CADENA DE CAUSALIDAD
     %% ==============================
