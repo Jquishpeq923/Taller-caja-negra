@@ -2,7 +2,7 @@ def realizar_calculos(presupuesto, socios, meses):
     """Lógica de negocio separada para poder automatizar las pruebas"""
     tasa_interes_mensual = 0.02
     intereses = presupuesto * tasa_interes_mensual * (meses ** 2)
-    total = presupuesto + intereses
+    total = presupuesto - intereses
     cuota_por_socio = total / socios
     
     return intereses, total, cuota_por_socio
