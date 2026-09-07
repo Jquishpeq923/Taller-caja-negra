@@ -18,4 +18,4 @@ jobs:
         run: pip install pytest
 
       - name: Ejecutar pruebas automatizadas
-        run: pytest
+        run: python -m pytest
