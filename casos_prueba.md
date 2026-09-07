@@ -1,33 +1,83 @@
 # Casos de Prueba de Caja Negra — presupuesto_analisis.py
 
-## Mapa Conceptual
-
-```mermaid
 flowchart TD
-    subgraph Cadena["Cadena de causalidad"]
-        E["Error<br/><small>Falla humana</small>"] --> D["Defecto<br/><small>Línea de código</small>"]
-        D --> F["Fallo<br/><small>Se ve al ejecutar</small>"]
+
+    %% ==============================
+    %% 🌸 CADENA DE CAUSALIDAD
+    %% ==============================
+    subgraph Cadena["🌸 Cadena de causalidad"]
+        direction LR
+
+        E["🌷 <b>Error</b><br/><small>Falla humana</small>"]
+        D["🍓 <b>Defecto</b><br/><small>Línea de código</small>"]
+        F["✨ <b>Fallo</b><br/><small>Se ve al ejecutar</small>"]
+
+        E --> D --> F
     end
 
-    subgraph Roles["Roles operativos"]
-        QA["QA<br/><small>Mejora el proceso</small>"]
-        QC["QC<br/><small>Revisa el producto</small>"]
-        T["Testing<br/><small>Ejecuta las pruebas</small>"]
+
+    %% ==============================
+    %% 🐰 ROLES OPERATIVOS
+    %% ==============================
+    subgraph Roles["🐰 Roles operativos"]
+        direction LR
+
+        QA["🌸 <b>QA</b><br/><small>Mejora el proceso</small>"]
+        QC["🧸 <b>QC</b><br/><small>Revisa el producto</small>"]
+        T["🎀 <b>Testing</b><br/><small>Ejecuta las pruebas</small>"]
+
+        QA ~~~ QC
+        QC ~~~ T
     end
 
-    subgraph Principios["7 principios ISTQB"]
-        P1["Detecta, no elimina<br/><small>Muestra que hay bugs</small>"]
-        P2["Nunca se prueba todo<br/><small>Cobertura total es imposible</small>"]
-        P3["Antes cuesta menos<br/><small>Detectar temprano ahorra</small>"]
-        P4["Los bugs se agrupan<br/><small>Concentrados en pocas zonas</small>"]
-        P5["Repetir pierde efecto<br/><small>La misma prueba deja de servir</small>"]
-        P6["Cada contexto es distinto<br/><small>No hay una receta única</small>"]
-        P7["Sin bugs no es perfecto<br/><small>Puede seguir sin resolver el problema</small>"]
+
+    %% ==============================
+    %% 🍰 PRINCIPIOS ISTQB
+    %% ==============================
+    subgraph Principios["🍰 7 principios ISTQB"]
+        direction TB
+
+        P1["🌱 <b>Detecta, no elimina</b><br/><small>Muestra que hay bugs</small>"]
+        P2["🫧 <b>Nunca se prueba todo</b><br/><small>Cobertura total es imposible</small>"]
+        P3["💗 <b>Antes cuesta menos</b><br/><small>Detectar temprano ahorra</small>"]
+        P4["🍓 <b>Los bugs se agrupan</b><br/><small>Concentrados en pocas zonas</small>"]
+        P5["🔄 <b>Repetir pierde efecto</b><br/><small>La misma prueba deja de servir</small>"]
+        P6["🌈 <b>Cada contexto es distinto</b><br/><small>No hay una receta única</small>"]
+        P7["🌸 <b>Sin bugs no es perfecto</b><br/><small>Puede seguir sin resolver el problema</small>"]
+
+        P1 ~~~ P2
+        P2 ~~~ P3
+        P3 ~~~ P4
+        P4 ~~~ P5
+        P5 ~~~ P6
+        P6 ~~~ P7
     end
 
-    Cadena -->|"se detecta durante"| Roles
-    Roles -->|"guiado por"| Principios
-```
+
+    %% ==============================
+    %% 🔗 RELACIONES
+    %% ==============================
+    Cadena -->|"💫 se detecta durante"| Roles
+    Roles -->|"🎀 guiado por"| Principios
+
+
+    %% ==============================
+    %% 🎨 ESTILOS KAWAII
+    %% ==============================
+
+    classDef causal fill:#FFF0F6,stroke:#E88BB5,stroke-width:2px,color:#5C3A4A;
+    classDef roles fill:#F0F7FF,stroke:#8DB8E8,stroke-width:2px,color:#384A5C;
+    classDef principles fill:#FFF9E6,stroke:#E5C66B,stroke-width:2px,color:#5C5132;
+
+    class E,D,F causal;
+    class QA,QC,T roles;
+    class P1,P2,P3,P4,P5,P6,P7 principles;
+
+    style Cadena fill:#FFF8FC,stroke:#E88BB5,stroke-width:3px
+    style Roles fill:#F7FBFF,stroke:#8DB8E8,stroke-width:3px
+    style Principios fill:#FFFDF3,stroke:#E5C66B,stroke-width:3px
+
+    linkStyle default stroke:#C79AB0,stroke-width:2px
 
 **Notas del equipo:**
 - Error → Defecto → Fallo: el error es la equivocación humana, el defecto es la línea física incorrecta, el fallo es lo que se observa al ejecutar.
