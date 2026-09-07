@@ -27,7 +27,7 @@ Repositorio de entrega para el taller de pruebas de caja negra sobre `presupuest
 - [x] Repositorio de GitHub estrictamente público.
 - [x] Contiene `presupuesto_analisis.py` tal como fue entregado.
 - [x] Contiene `casos_prueba.md`.
-- [x] El Markdown incluye evidencia (foto/link) del mapa conceptual. *(pendiente: insertar en casos_prueba.md)*
+- [x] El Markdown incluye evidencia (foto/link) del mapa conceptual.
 - [x] La tabla tiene los 3 casos ejecutados, con columna Estado y líneas de código defectuosas señaladas.
 - [x] El README.md contiene las respuestas a los dos desafíos del cierre.
 - [x] Todos los miembros del equipo participaron y observaron cada actividad. *(confirmar en equipo)*
