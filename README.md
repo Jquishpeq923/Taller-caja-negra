@@ -1,33 +1,33 @@
-# Taller Autónomo de Pruebas de Caja Negra
+**Matriz de Evaluación: Proyecto de Automatización y Calidad**
 
-Repositorio de entrega para el taller de pruebas de caja negra sobre `presupuesto_analisis.py`.
+**C1: Demostración CI/CD y Pipeline Automatizado**
+* El proyecto integra un pipeline de Integración Continua utilizando GitHub Actions.
+* El archivo de configuración YAML (`.github/workflows/tests.yml`) orquesta la descarga del código, la instalación de dependencias y la ejecución de pruebas en un entorno virtual Ubuntu.
+* **Ejecución Exitosa (Luz Verde):** Se demuestra cuando el código cumple con todas las reglas de negocio y PyTest finaliza sin errores.
+* **Sabotaje Intencional (Luz Roja):** Se inyectó un error lógico en la calculadora cambiando la suma del total por una resta. El pipeline detectó el fallo matemático mediante un AssertionError, abortó el proceso y marcó una cruz roja, demostrando el bloqueo inmediato de código defectuoso.
 
-## Contenido del repositorio
+**C2: Cobertura de Pruebas con PyTest**
+* Se desarrolló un script estructurado de validación (`test_presupuesto.py`) para verificar exhaustivamente la lógica de negocio.
+* **Casos Felices:** Validación de cálculos matemáticos con valores típicos y aserciones limpias.
+* **Casos Límite:** Comprobación del comportamiento del sistema simulando periodos de inversión de cero meses.
+* **Manejo de Excepciones:** Prueba estricta utilizando `pytest.raises` para atrapar errores críticos como la división por cero.
+* **Inputs Negativos:** Inyección de presupuestos negativos simulando deudas para evitar cálculos financieros anómalos.
 
-- `presupuesto_analisis.py` — script base entregado por el profesor, con los defectos originales.
-- `casos_prueba.md` — mapa conceptual, tabla de casos de prueba y reportes de defecto.
-- `README.md` — este archivo, con la validación conceptual de cierre.
+**C3: Mapeo STLC y Criterios de Entrada/Salida**
+* **Fase de Planificación y Configuración (STLC):** Representada por el diseño de la receta YAML y la creación de la estructura de directorios para aislar las pruebas.
+* **Fase de Ejecución (STLC):** Evidenciada por el proceso automatizado en la nube cada vez que un push dispara el comando de validación.
+* **Criterios de Entrada:** 
+  * El código fuente debe estar refactorizado, aislando la lógica matemática pura de las entradas de consola.
+  * Las dependencias de validación deben estar declaradas explícitamente en el pipeline.
+* **Criterios de Salida:**
+  * El flujo de GitHub Actions debe finalizar con estado de éxito visual comprobable.
+  * Todas las pruebas de casos límite, excepciones y valores negativos deben pasar sus aserciones lógicas sin fallos.
 
-## Cierre y Validación Conceptual
+**C4: Análisis Técnico y Metacognitivo**
+* **Pruebas en la nube vs entorno local:** Las pruebas locales dependen de la configuración específica de cada máquina, lo cual oculta problemas de compatibilidad. Las pruebas en la nube proporcionan un entorno virtual estandarizado e imparcial, garantizando que el código funcione universalmente.
+* **Significado de la luz verde:** Actúa como un seguro anti regresiones. Confirma matemáticamente que los cambios recientes son correctos y asegura que las nuevas modificaciones no rompieron ninguna funcionalidad previa.
+* **Consecuencias de ignorar Exit Criteria bajo presión:** Omitir los criterios de salida por urgencias de entrega introduce deuda técnica inmediata al proyecto. Forzar pases a producción saltándose estas métricas incrementa drásticamente el riesgo de que fallos críticos causen caídas del sistema para los usuarios finales.
 
-### Desafío Lógico 1
-
-**Pregunta:** ¿Es posible que un Defecto (Bug) exista en el código fuente de `presupuesto_analisis.py` durante años sin llegar a causar nunca un Fallo (Failure)?
-
-**Respuesta:** Sí, es posible. Un Defecto es una condición física en el código (por ejemplo, la falta de validación de `socios` antes de dividir), pero solo se convierte en Fallo cuando se ejecuta una ruta específica del programa con datos que activan ese defecto. Si el sistema nunca recibe `socios = 0` o un valor negativo — por ejemplo, porque siempre lo alimenta un formulario externo que ya filtra esos casos — el defecto permanece latente en el código sin manifestarse nunca como un fallo observable. Esto es coherente con el principio ISTQB de que el testing depende del contexto: el mismo defecto puede ser crítico en un entorno y completamente irrelevante en otro.
-
-### Desafío Lógico 2
-
-**Pregunta:** Si se corrigen todos los bugs y el script funciona perfecto, pero el cliente afirma que "necesitaba un sistema para calcular nóminas, no presupuestos", ¿qué principio fundamental del testing se acaba de violar aunque el código esté limpio?
-
-**Respuesta:** Se violó el principio de **Validación** sobre **Verificación**. La Verificación responde "¿construimos el producto correctamente?" y en este caso se cumplió: el código está libre de defectos y hace exactamente lo que su especificación indicaba. Pero la Validación responde "¿construimos el producto correcto?", y ahí es donde el proyecto falla: se construyó un sistema perfecto para una necesidad que no era la del cliente. Es el ejemplo clásico de que un software técnicamente impecable puede seguir siendo un fracaso si nunca se validó contra la necesidad real del usuario.
-
-## Autoevaluación final
-
-- [x] Repositorio de GitHub estrictamente público.
-- [x] Contiene `presupuesto_analisis.py` tal como fue entregado.
-- [x] Contiene `casos_prueba.md`.
-- [x] El Markdown incluye evidencia (foto/link) del mapa conceptual.
-- [x] La tabla tiene los 3 casos ejecutados, con columna Estado y líneas de código defectuosas señaladas.
-- [x] El README.md contiene las respuestas a los dos desafíos del cierre.
-- [x] Todos los miembros del equipo participaron y observaron cada actividad. *(confirmar en equipo)*
+**C5: Organización del Repositorio y Git**
+* El repositorio refleja un historial de desarrollo estructurado mediante mensajes de commit descriptivos que documentan cada corrección y prueba.
+* Todo el código fuente, los scripts de validación y la documentación teórica se encuentran organizados dentro del directorio requerido `semana-2` para garantizar el orden, la limpieza y la accesibilidad técnica del proyecto final.
