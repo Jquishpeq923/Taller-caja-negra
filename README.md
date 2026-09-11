@@ -30,4 +30,3 @@
 
 **C5: Organización del Repositorio y Git**
 * El repositorio refleja un historial de desarrollo estructurado mediante mensajes de commit descriptivos que documentan cada corrección y prueba.
-* Todo el código fuente, los scripts de validación y la documentación teórica se encuentran organizados dentro del directorio requerido `semana-2` para garantizar el orden, la limpieza y la accesibilidad técnica del proyecto final.
