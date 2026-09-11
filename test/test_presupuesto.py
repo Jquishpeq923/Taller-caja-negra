@@ -1,7 +1,6 @@
 # Habilita herramientas avanzadas del framework como la captura de errores esperados
-import pytest
+import pytest  
 from presupuesto_analisis import realizar_calculos
-
 
 def test_calculos_correctos():
     """
@@ -33,16 +32,15 @@ def test_calculos_cero_meses():
     # La cuota se divide normalmente sin el impacto de los intereses
     assert cuota == 500.0
 
-
 def test_division_por_cero():
-    # Anticipa y atrapa el error matematico para que la prueba pase con exito
+    # Inicia una trampa o escudo para anticipar y atrapar un error matemático esperado
     with pytest.raises(ZeroDivisionError):
-        # Fuerza el fallo calculando con 0 socios
+        # Ejecuta la función de la calculadora asignando 0 socios para forzar la división entre cero
         realizar_calculos(1000, 0, 5)
 
 def test_inputs_negativos():
-    # Inyecta un presupuesto inicial negativo simulando una deuda
+    # Ejecuta la calculadora inyectando un presupuesto inicial negativo (-1000) simulando una deuda y guarda los resultados
     intereses, total, cuota = realizar_calculos(-1000, 2, 5)
     
-    # Confirma que el dinero total calculado mantenga su valor negativo
+    # Utiliza assert para verificar lógicamente que el total calculado se mantenga estrictamente en valor negativo
     assert total < 0
