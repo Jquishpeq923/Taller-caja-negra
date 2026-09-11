@@ -1,5 +1,7 @@
 # Importamos la función matemática desde el archivo principal para poder probarla
+import pytest
 from presupuesto_analisis import realizar_calculos
+
 
 def test_calculos_correctos():
     """
@@ -30,3 +32,12 @@ def test_calculos_cero_meses():
     assert total == 1000.0
     # La cuota se divide normalmente sin el impacto de los intereses
     assert cuota == 500.0
+
+
+def test_division_por_cero():
+    with pytest.raises(ZeroDivisionError):
+        realizar_calculos(1000, 0, 5)
+
+def test_inputs_negativos():
+    intereses, total, cuota = realizar_calculos(-1000, 2, 5)
+    assert total < 0
