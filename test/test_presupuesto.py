@@ -1,4 +1,4 @@
-# Importamos la función matemática desde el archivo principal para poder probarla
+# Habilita herramientas avanzadas del framework como la captura de errores esperados
 import pytest
 from presupuesto_analisis import realizar_calculos
 
@@ -35,9 +35,14 @@ def test_calculos_cero_meses():
 
 
 def test_division_por_cero():
+    # Anticipa y atrapa el error matematico para que la prueba pase con exito
     with pytest.raises(ZeroDivisionError):
+        # Fuerza el fallo calculando con 0 socios
         realizar_calculos(1000, 0, 5)
 
 def test_inputs_negativos():
+    # Inyecta un presupuesto inicial negativo simulando una deuda
     intereses, total, cuota = realizar_calculos(-1000, 2, 5)
+    
+    # Confirma que el dinero total calculado mantenga su valor negativo
     assert total < 0
