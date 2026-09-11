@@ -1,21 +1,30 @@
 name: CI Pruebas de Calculadora
 
+# Especifica el evento de control de versiones que desencadena la ejecucion
+# [push] indica que se iniciara automaticamente al subir nuevos commits
 on: [push]
 
 jobs:
   test:
+    # Determina el sistema operativo del entorno virtual (Ubuntu Linux)
     runs-on: ubuntu-latest
+    
+    # Define la secuencia estricta de acciones a ejecutar en el contenedor
     steps:
-      - name: Descargar el código
+      # Invoca una accion predefinida para clonar el codigo fuente del repositorio
+      - name: Descargar el codigo
         uses: actions/checkout@v3
 
+      # Invoca una accion predefinida para instalar el interprete de Python 3.10
       - name: Configurar Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # Ejecuta un comando en consola para instalar el framework de pruebas
       - name: Instalar dependencias
         run: pip install pytest
 
+      # Ejecuta la validacion de codigo cargando los modulos previamente
       - name: Ejecutar pruebas automatizadas
         run: python -m pytest
