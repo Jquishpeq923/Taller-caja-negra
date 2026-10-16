@@ -1,6 +1,6 @@
 # Taller Práctico 4: PICT + pytest (PagoYa)
 
-**Integrantes:** Julian, (agrega aquí a tu equipo)
+**Integrantes:** JuliaN Garofalo, José Quishpe
 
 ## Resumen del modelo
 Modelamos el checkout de la pasarela de pagos PagoYa con 7 parámetros: Dispositivo, Pais, Metodo, Moneda, Envio, Cupon y Monto. Aplicamos seis reglas de negocio como restricciones IF/THEN: la moneda depende del país (R1), Contraentrega solo en Ecuador o Colombia y hasta 500 (R2), Billetera solo en Celular o Tablet (R3), sin Express para el país Otro (R4), el cupón Bienvenida exige monto de al menos 50 (R5) y con monto 2000 solo Tarjeta o Transferencia (R6). PICT generó covering arrays de orden 2 y 3 que pytest ejecuta automáticamente.
