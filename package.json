@@ -1,0 +1,36 @@
+{
+  "name": "sistema-citas-medicas-qa-mccabe",
+  "version": "1.0.0",
+  "description": "Sistema de Citas de Médico Familiar (Node.js + Express + SQLite + Alpine.js) Auditado con Complejidad Ciclomática de McCabe y Cobertura de Caja Blanca",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest --coverage",
+    "test:nativo": "node --test --experimental-test-coverage tests/reglasCitas.test.js",
+    "test:zombi": "jest tests/trampa_zombi.test.js --coverage",
+    "test:mutacion": "node tests/mutacion_qa.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "c8": "^9.1.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/reglasCitas.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    }
+  }
+}

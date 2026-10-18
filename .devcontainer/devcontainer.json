@@ -1,0 +1,19 @@
+{
+  "name": "MediQA - Sistema de Citas y Auditoría McCabe",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "MediQA Web App (Citas Médicas y Auditoría QA)",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "npm install || true",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

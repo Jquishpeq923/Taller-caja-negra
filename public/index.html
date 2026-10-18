@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediQA — Sistema de Citas Médicas y Auditoría de Caja Blanca (McCabe & Cobertura)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    [x-cloak] {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900" x-data="appCitasQA()" x-init="inicializar()">
+
+  <!-- Barra Superior -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 font-bold text-lg">
+          V(G)
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg tracking-tight">MediQA — Citas de Médico Familiar &amp; Auditoría McCabe</h1>
+            <span class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              100% Branch Coverage
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Node.js (Express) + SQLite + Alpine.js | Pruebas Estructurales de Caja Blanca</p>
+        </div>
+      </div>
+
+      <!-- Navegación por Pestañas -->
+      <nav class="flex flex-wrap items-center gap-1.5 bg-slate-800/90 p-1 rounded-xl border border-slate-700">
+        <button type="button"
+                @click="tabActiva = 'app'"
+                :class="tabActiva === 'app' ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-700/60'"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm transition">
+          1. App Citas Médicas
+        </button>
+        <button type="button"
+                @click="tabActiva = 'cfg'"
+                :class="tabActiva === 'cfg' ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-700/60'"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm transition">
+          2. Grafo CFG &amp; McCabe
+        </button>
+        <button type="button"
+                @click="tabActiva = 'tests'"
+                :class="tabActiva === 'tests' ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-700/60'"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm transition">
+          3. Falso 100% &amp; Mutación
+        </button>
+        <button type="button"
+                @click="tabActiva = 'guia'"
+                :class="tabActiva === 'guia' ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-700/60'"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm transition">
+          4. Guía de Exposición
+        </button>
+        <button type="button"
+                @click="tabActiva = 'codigo'"
+                :class="tabActiva === 'codigo' ? 'bg-amber-500 text-slate-950 font-semibold shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-700/60'"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm transition">
+          5. Codespaces &amp; Código Comentado
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notificación Toast Flotante -->
+  <div x-show="toast.visible"
+       x-cloak
+       x-transition.opacity
+       class="fixed bottom-5 right-5 z-50 max-w-md w-full px-4">
+    <div :class="toast.tipo === 'exito' ? 'bg-emerald-900 border-emerald-500 text-emerald-50' : (toast.tipo === 'alerta' ? 'bg-amber-900 border-amber-500 text-amber-50' : 'bg-rose-950 border-rose-500 text-rose-50')"
+         class="rounded-xl border-l-4 p-4 shadow-xl flex items-start justify-between gap-3">
+      <div>
+        <p class="font-bold text-sm" x-text="toast.titulo"></p>
+        <p class="text-xs mt-1 opacity-90" x-text="toast.mensaje"></p>
+        <p class="text-[11px] font-mono-code mt-1.5 px-2 py-0.5 rounded bg-black/30 inline-block" x-show="toast.caminoMcCabe" x-text="toast.caminoMcCabe"></p>
+      </div>
+      <button type="button" @click="toast.visible = false" class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Contenido Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 1: APLICACIÓN DE CITAS DE MÉDICO FAMILIAR (4 REGLAS CRÍTICAS) -->
+    <!-- =================================================================== -->
+    <section x-show="tabActiva === 'app'" x-cloak class="space-y-6">
+
+      <!-- Banner de Escenarios Rápidos para Demostración en Vivo -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Modo Demostración en Vivo</span>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">Prueba las 4 Reglas de Negocio Críticas con 1 Clic</h2>
+          </div>
+          <span class="text-xs text-slate-500 font-mono-code" x-text="'Motor activo: ' + modoPersistencia"></span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <button type="button"
+                  @click="cargarEscenarioDemo('menor_sin_tutor')"
+                  class="text-left p-3 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100/80 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-rose-800">1. Regla de Edad</span>
+              <span class="text-[11px] font-mono-code bg-rose-200/80 text-rose-900 px-1.5 py-0.5 rounded">Camino 3 (Fallo)</span>
+            </div>
+            <p class="text-xs text-rose-700 mt-1">Paciente de 9 años sin acompañante adulto → Rechaza reserva.</p>
+          </button>
+
+          <button type="button"
+                  @click="cargarEscenarioDemo('horario_almuerzo')"
+                  class="text-left p-3 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100/80 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-900">2. Restricción Horaria</span>
+              <span class="text-[11px] font-mono-code bg-amber-200/80 text-amber-900 px-1.5 py-0.5 rounded">Camino 5 (13:00)</span>
+            </div>
+            <p class="text-xs text-amber-800 mt-1">Intenta agendar a las 13:00 (Almuerzo) o en Sábado → Bloquea franja.</p>
+          </button>
+
+          <button type="button"
+                  @click="cargarEscenarioDemo('choque_citas')"
+                  class="text-left p-3 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/80 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-purple-900">3. Choque de Citas</span>
+              <span class="text-[11px] font-mono-code bg-purple-200/80 text-purple-900 px-1.5 py-0.5 rounded">Camino 4 (Solapa)</span>
+            </div>
+            <p class="text-xs text-purple-800 mt-1">Mismo médico a las 10:15 (choca con cita 10:00–10:30) → Rechaza.</p>
+          </button>
+
+          <button type="button"
+                  @click="cargarEscenarioDemo('cita_valida')"
+                  class="text-left p-3 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/80 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-900">4. Reserva Exitosa</span>
+              <span class="text-[11px] font-mono-code bg-emerald-200/80 text-emerald-900 px-1.5 py-0.5 rounded">Pasa 3 Reglas</span>
+            </div>
+            <p class="text-xs text-emerald-800 mt-1">Paciente pediátrico con tutor en horario libre (15:00) → Guarda en BD.</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid Principal: Formulario + Lista de Citas y Trazabilidad Caja Blanca -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Columna Izquierda (5 cols): Formulario de Agendamiento -->
+        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 class="font-bold text-base text-slate-900">Agendar Nueva Cita Médica</h3>
+                <p class="text-xs text-slate-500">Validación estructural en tiempo real</p>
+              </div>
+              <span class="text-xs font-mono-code px-2.5 py-1 rounded-lg"
+                    :class="formCita.edad !== '' && Number(formCita.edad) < 18 ? 'bg-indigo-100 text-indigo-800 font-semibold' : 'bg-slate-100 text-slate-700'"
+                    x-text="formCita.edad !== '' && Number(formCita.edad) < 18 ? 'Pediátrico (40 min)' : 'Adulto (30 min)'">
+              </span>
+            </div>
+
+            <form @submit.prevent="agendarCita()" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo del Paciente</label>
+                <input type="text"
+                       x-model="formCita.paciente"
+                       required
+                       placeholder="Ej. Mateo Rivera"
+                       class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Edad (Años)</label>
+                  <input type="number"
+                         x-model="formCita.edad"
+                         required
+                         placeholder="0 - 120"
+                         class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+
+                <div class="flex flex-col justify-end">
+                  <label class="flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
+                         :class="Number(formCita.edad) < 18 ? 'border-indigo-300 bg-indigo-50/60' : 'border-slate-200 bg-slate-50'">
+                    <input type="checkbox"
+                           x-model="formCita.tieneAcompaniante"
+                           class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500">
+                    <div>
+                      <span class="block text-xs font-semibold text-slate-800">Con Adulto Tutor</span>
+                      <span class="block text-[11px] text-slate-500">Obligatorio si edad &lt; 18</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Médico Familiar Asignado</label>
+                <select x-model="formCita.medicoId"
+                        class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                  <option value="DR_GOMEZ">Dr. Alejandro Gómez — Medicina Familiar Integral</option>
+                  <option value="DRA_LOPEZ">Dra. Valeria López — Medicina Familiar &amp; Pediatría</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha de la Cita</label>
+                  <input type="date"
+                         x-model="formCita.fecha"
+                         required
+                         class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                  <p class="text-[11px] text-slate-500 mt-1" x-text="obtenerEtiquetaDia(formCita.fecha)"></p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Hora de Inicio (08:00 - 18:00)</label>
+                  <input type="time"
+                         x-model="formCita.hora"
+                         required
+                         class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                  <p class="text-[11px] text-slate-500 mt-1">Almuerzo bloqueado: 13:00–14:00</p>
+                </div>
+              </div>
+
+              <button type="submit"
+                      class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow transition flex items-center justify-center gap-2">
+                <span>Validar Reglas McCabe y Agendar Cita</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Trazabilidad del Último Camino Ejecutado -->
+          <div class="mt-5 pt-4 border-t border-slate-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Traza de Auditoría de Caja Blanca</span>
+              <span class="text-xs font-mono-code font-semibold px-2 py-0.5 rounded"
+                    :class="ultimaTraza.exito ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                    x-text="ultimaTraza.codigo"></span>
+            </div>
+            <div class="bg-slate-900 text-slate-100 rounded-xl p-3 font-mono-code text-xs space-y-1.5">
+              <div class="text-amber-400 font-semibold" x-text="ultimaTraza.regla"></div>
+              <div class="text-slate-300" x-text="ultimaTraza.camino"></div>
+              <div class="text-emerald-300 text-[11px]" x-text="ultimaTraza.detalle"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha (7 cols): Agenda SQLite + Simulador de Cancelación Tardía (< 24h) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- Panel de Citas Registradas -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 class="font-bold text-base text-slate-900">Agenda de Citas Médicas (SQLite)</h3>
+                <p class="text-xs text-slate-500">Haz clic en «Auditar Cancelación» para probar los 3 caminos de McCabe de la Regla 4 (&lt; 24h)</p>
+              </div>
+              <button type="button"
+                      @click="restaurarCitasSemilla()"
+                      class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-medium transition">
+                Restaurar Datos Iniciales
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              <template x-for="cita in citas" :key="cita.id">
+                <div class="p-3.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                     :class="cita.estado === 'CANCELADA' ? 'bg-slate-50 border-slate-200 opacity-80' : 'bg-white border-slate-200 hover:border-slate-300'">
+                  <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-mono-code text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800" x-text="'#' + cita.id"></span>
+                      <span class="font-bold text-sm text-slate-900" x-text="cita.paciente"></span>
+                      <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                            :class="cita.categoria === 'PEDIATRICO' ? 'bg-indigo-100 text-indigo-800' : 'bg-sky-100 text-sky-800'"
+                            x-text="cita.categoria + ' (' + cita.edad + ' años)'"></span>
+                      <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
+                            :class="cita.estado === 'CONFIRMADA' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                            x-text="cita.estado"></span>
+                    </div>
+                    <p class="text-xs text-slate-600">
+                      <span class="font-medium" x-text="cita.medicoNombre"></span> •
+                      <span class="font-mono-code" x-text="cita.fecha + ' | ' + cita.hora + ' (' + cita.duracionMinutos + ' min)'"></span>
+                    </p>
+                    <template x-if="cita.estado === 'CANCELADA'">
+                      <p class="text-xs font-mono-code mt-1"
+                         :class="cita.penalizado ? 'text-rose-600 font-semibold' : 'text-emerald-700'">
+                        <span x-text="cita.penalizado ? 'Penalización aplicada: $' + cita.montoPenalizacion + '.00 USD (<24h sin emergencia)' : 'Cancelada sin penalización ($0.00 USD)'"></span>
+                      </p>
+                    </template>
+                  </div>
+
+                  <div class="flex items-center gap-2 self-end sm:self-center">
+                    <template x-if="cita.estado === 'CONFIRMADA'">
+                      <button type="button"
+                              @click="abrirModalCancelacion(cita)"
+                              class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 border border-amber-400/50 text-xs font-semibold transition">
+                        Auditar Cancelación (&lt;24h)
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Simulador Directo de Regla 4 (Diapositiva 8: Penalización Tardía V(G) = 3) -->
+          <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-md border border-slate-800">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Regla 4 • Caso Estrella Diapositiva 8</span>
+                <h3 class="text-base font-bold">Evaluador de Cancelación Tardía — Complejidad McCabe V(G) = 3</h3>
+              </div>
+              <span class="font-mono-code text-xs bg-slate-800 px-2.5 py-1 rounded border border-slate-700 text-amber-300">
+                if (cancelacionTardia &amp;&amp; !esEmergencia)
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+              <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700">
+                <label class="block text-xs text-slate-300 font-semibold mb-1">Cita a Evaluar</label>
+                <select x-model="formCancelacion.citaId"
+                        class="w-full rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-white">
+                  <template x-for="c in citas" :key="c.id">
+                    <option :value="c.id" x-text="'#' + c.id + ' - ' + c.paciente + ' (' + c.estado + ')'"></option>
+                  </template>
+                </select>
+              </div>
+
+              <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700">
+                <label class="block text-xs text-slate-300 font-semibold mb-1">Horas de Anticipación</label>
+                <div class="flex items-center gap-2">
+                  <input type="number"
+                         x-model="formCancelacion.horasAnticipacion"
+                         min="0"
+                         max="168"
+                         class="w-20 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-white font-mono-code">
+                  <span class="text-xs font-mono-code px-2 py-0.5 rounded"
+                        :class="Number(formCancelacion.horasAnticipacion) < 24 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'"
+                        x-text="Number(formCancelacion.horasAnticipacion) < 24 ? 'Tardía (<24h): TRUE' : 'A tiempo (>=24h): FALSE'">
+                  </span>
+                </div>
+              </div>
+
+              <div class="bg-slate-800/90 p-3 rounded-xl border border-slate-700 flex flex-col justify-center">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox"
+                         x-model="formCancelacion.esEmergencia"
+                         class="w-4 h-4 rounded text-amber-500">
+                  <span class="text-xs font-semibold text-slate-200">¿Es Emergencia Médica?</span>
+                </label>
+                <span class="text-[11px] font-mono-code text-slate-400 mt-1"
+                      x-text="'!esEmergencia = ' + (!formCancelacion.esEmergencia ? 'TRUE' : 'FALSE')"></span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button"
+                        @click="probarCaminoCancelacion(1)"
+                        class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-mono-code">
+                  Camino 1: 36h (Tardía=False)
+                </button>
+                <button type="button"
+                        @click="probarCaminoCancelacion(2)"
+                        class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-mono-code">
+                  Camino 2: 6h + Emergencia=True
+                </button>
+                <button type="button"
+                        @click="probarCaminoCancelacion(3)"
+                        class="text-xs px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 font-mono-code">
+                  Camino 3: 6h + Emergencia=False ($25)
+                </button>
+              </div>
+
+              <button type="button"
+                      @click="ejecutarCancelacionCita()"
+                      class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow">
+                Aplicar Cancelación a Cita Seleccionada
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 2: GRAFO DE FLUJO DE CONTROL (CFG) Y CÁLCULO DE McCABE      -->
+    <!-- =================================================================== -->
+    <section x-show="tabActiva === 'cfg'" x-cloak class="space-y-6">
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-5">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Taller Paso 1 • Diapositivas 5, 6 y 8</span>
+            <h2 class="text-lg font-bold text-slate-900">Anatomía del Código: Grafo de Flujo de Control (CFG) y McCabe V(G)</h2>
+          </div>
+
+          <!-- Controles Interactivos del Grafo -->
+          <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl">
+            <button type="button"
+                    @click="cfgCaminoActivo = 1"
+                    :class="cfgCaminoActivo === 1 ? 'bg-slate-900 text-white font-semibold' : 'text-slate-700 hover:bg-slate-200'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              Camino 1 (Tardía=False)
+            </button>
+            <button type="button"
+                    @click="cfgCaminoActivo = 2"
+                    :class="cfgCaminoActivo === 2 ? 'bg-slate-900 text-white font-semibold' : 'text-slate-700 hover:bg-slate-200'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              Camino 2 (Tardía=True, Emergencia=True)
+            </button>
+            <button type="button"
+                    @click="cfgCaminoActivo = 3"
+                    :class="cfgCaminoActivo === 3 ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-700 hover:bg-slate-200'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              Camino 3 (Tardía=True, Emergencia=False)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <!-- Código + las 3 Fórmulas de McCabe -->
+          <div class="lg:col-span-5 space-y-4">
+            <div class="bg-slate-900 text-slate-100 rounded-xl p-4 font-mono-code text-xs leading-relaxed border border-slate-800">
+              <div class="text-slate-400 mb-2">// Código auditado (Diapositiva 8):</div>
+              <div><span class="text-purple-400">function</span> <span class="text-amber-300">evaluarPenalizacionCancelacion</span>(</div>
+              <div class="pl-4">cancelacionTardia, esEmergencia, aplicarPenalizacion</div>
+              <div>) {</div>
+              <div class="pl-4 py-1 rounded" :class="cfgCaminoActivo >= 1 ? 'bg-amber-500/20 text-amber-200' : ''">
+                <span class="text-purple-400">if</span> (cancelacionTardia <span class="text-amber-400">&amp;&amp;</span> !esEmergencia) {
+              </div>
+              <div class="pl-8 py-1 rounded" :class="cfgCaminoActivo === 3 ? 'bg-emerald-500/30 text-emerald-200 font-bold' : 'text-slate-400'">
+                aplicarPenalizacion(); <span class="text-xs">// Cargo $25</span>
+              </div>
+              <div class="pl-8 py-0.5 rounded" :class="cfgCaminoActivo === 3 ? 'bg-emerald-500/30 text-emerald-200' : 'text-slate-400'">
+                <span class="text-purple-400">return</span> { penalizado: <span class="text-amber-300">true</span>, monto: <span class="text-amber-300">25</span> };
+              </div>
+              <div class="pl-4">}</div>
+              <div class="pl-4 py-1 rounded" :class="cfgCaminoActivo !== 3 ? 'bg-sky-500/20 text-sky-200 font-bold' : 'text-slate-400'">
+                <span class="text-purple-400">return</span> { penalizado: <span class="text-amber-300">false</span>, monto: <span class="text-amber-300">0</span> };
+              </div>
+              <div>}</div>
+            </div>
+
+            <!-- Las 3 Fórmulas Equivalentes de McCabe (Diapositiva 6) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <div class="text-[11px] font-bold uppercase text-amber-800">1. Por Predicados</div>
+                <div class="font-mono-code font-bold text-base text-slate-900 mt-1">V(G) = P + 1</div>
+                <div class="font-mono-code text-xs text-amber-900 mt-0.5">2 + 1 = <strong>3</strong></div>
+                <p class="text-[11px] text-slate-600 mt-1">P1: cancelacionTardia<br>P2: !esEmergencia</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-sky-50 border border-sky-200">
+                <div class="text-[11px] font-bold uppercase text-sky-800">2. Aristas y Nodos</div>
+                <div class="font-mono-code font-bold text-base text-slate-900 mt-1">V(G) = E - N + 2</div>
+                <div class="font-mono-code text-xs text-sky-900 mt-0.5">6 - 5 + 2 = <strong>3</strong></div>
+                <p class="text-[11px] text-slate-600 mt-1">E = 6 flechas<br>N = 5 nodos</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                <div class="text-[11px] font-bold uppercase text-emerald-800">3. Por Regiones</div>
+                <div class="font-mono-code font-bold text-base text-slate-900 mt-1">V(G) = R</div>
+                <div class="font-mono-code text-xs text-emerald-900 mt-0.5">2 cerradas + 1 ext = <strong>3</strong></div>
+                <p class="text-[11px] text-slate-600 mt-1">3 caminos independientes</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diagrama SVG Interactivo del CFG -->
+          <div class="lg:col-span-7 bg-slate-950 rounded-2xl p-4 border border-slate-800 flex flex-col items-center">
+            <div class="w-full flex items-center justify-between text-xs text-slate-400 mb-2 px-2">
+              <span class="font-mono-code">GRAFO DE FLUJO DE CONTROL (CFG) INTERACTIVO</span>
+              <span class="font-mono-code text-amber-400" x-text="'Mostrando: Camino ' + cfgCaminoActivo + ' de 3'"></span>
+            </div>
+
+            <svg viewBox="0 0 600 340" class="w-full max-w-xl h-auto">
+              <!-- Definición de Marcadores de Flecha -->
+              <defs>
+                <marker id="arrow-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569"></path>
+                </marker>
+                <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b"></path>
+                </marker>
+              </defs>
+
+              <!-- E1: N1 (ENTRY) -> N2 (cancelacionTardia?) -->
+              <line x1="300" y1="52" x2="300" y2="88"
+                    stroke="#f59e0b" stroke-width="3" marker-end="url(#arrow-active)" />
+
+              <!-- E2: N2 (False) -> N5 (EXIT sin penalización) [Camino 1] -->
+              <path d="M 225 115 C 110 115, 110 285, 245 295"
+                    fill="none"
+                    :stroke="cfgCaminoActivo === 1 ? '#f59e0b' : '#475569'"
+                    :stroke-width="cfgCaminoActivo === 1 ? '3.5' : '2'"
+                    :marker-end="cfgCaminoActivo === 1 ? 'url(#arrow-active)' : 'url(#arrow-muted)'" />
+              <text x="145" y="105" fill="#94a3b8" font-size="11" font-family="monospace">False (Camino 1)</text>
+
+              <!-- E3: N2 (True) -> N3 (!esEmergencia?) [Caminos 2 y 3] -->
+              <line x1="300" y1="142" x2="300" y2="178"
+                    :stroke="cfgCaminoActivo >= 2 ? '#f59e0b' : '#475569'"
+                    :stroke-width="cfgCaminoActivo >= 2 ? '3.5' : '2'"
+                    :marker-end="cfgCaminoActivo >= 2 ? 'url(#arrow-active)' : 'url(#arrow-muted)'" />
+              <text x="310" y="164" fill="#cbd5e1" font-size="11" font-family="monospace">True</text>
+
+              <!-- E4: N3 (False: Sí es emergencia) -> N5 (EXIT) [Camino 2] -->
+              <path d="M 235 205 C 185 205, 195 265, 255 285"
+                    fill="none"
+                    :stroke="cfgCaminoActivo === 2 ? '#f59e0b' : '#475569'"
+                    :stroke-width="cfgCaminoActivo === 2 ? '3.5' : '2'"
+                    :marker-end="cfgCaminoActivo === 2 ? 'url(#arrow-active)' : 'url(#arrow-muted)'" />
+              <text x="150" y="235" fill="#94a3b8" font-size="11" font-family="monospace">False (Camino 2)</text>
+
+              <!-- E5: N3 (True: NO es emergencia) -> N4 (aplicarPenalizacion) [Camino 3] -->
+              <path d="M 365 205 L 470 205 L 470 230"
+                    fill="none"
+                    :stroke="cfgCaminoActivo === 3 ? '#f59e0b' : '#475569'"
+                    :stroke-width="cfgCaminoActivo === 3 ? '3.5' : '2'"
+                    :marker-end="cfgCaminoActivo === 3 ? 'url(#arrow-active)' : 'url(#arrow-muted)'" />
+              <text x="385" y="196" fill="#fcd34d" font-size="11" font-family="monospace">True (Camino 3)</text>
+
+              <!-- E6: N4 -> N5 (EXIT) -->
+              <path d="M 470 274 C 470 300, 390 300, 355 298"
+                    fill="none"
+                    :stroke="cfgCaminoActivo === 3 ? '#f59e0b' : '#475569'"
+                    :stroke-width="cfgCaminoActivo === 3 ? '3.5' : '2'"
+                    :marker-end="cfgCaminoActivo === 3 ? 'url(#arrow-active)' : 'url(#arrow-muted)'" />
+
+              <!-- NODO N1: ENTRY -->
+              <circle cx="300" cy="30" r="22" fill="#1e293b" stroke="#f59e0b" stroke-width="2.5" />
+              <text x="300" y="34" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="bold" font-family="monospace">N1:IN</text>
+
+              <!-- NODO PREDICADO P1 (N2): cancelacionTardia? -->
+              <polygon points="300,88 375,115 300,142 225,115"
+                       fill="#1e293b"
+                       stroke="#f59e0b"
+                       stroke-width="2.5" />
+              <text x="300" y="118" text-anchor="middle" fill="#fde68a" font-size="10.5" font-weight="bold" font-family="monospace">P1: ¿Tardía?</text>
+
+              <!-- NODO PREDICADO P2 (N3): !esEmergencia? -->
+              <polygon points="300,178 365,205 300,232 235,205"
+                       fill="#1e293b"
+                       :stroke="cfgCaminoActivo >= 2 ? '#f59e0b' : '#64748b'"
+                       stroke-width="2.5" />
+              <text x="300" y="208" text-anchor="middle" fill="#fde68a" font-size="10" font-weight="bold" font-family="monospace">P2: ¿!Emerg?</text>
+
+              <!-- NODO ACCIÓN (N4): aplicarPenalizacion() -->
+              <rect x="395" y="232" width="150" height="40" rx="8"
+                    :fill="cfgCaminoActivo === 3 ? '#065f46' : '#1e293b'"
+                    :stroke="cfgCaminoActivo === 3 ? '#34d399' : '#64748b'"
+                    stroke-width="2" />
+              <text x="470" y="255" text-anchor="middle" fill="#ecfdf5" font-size="10.5" font-weight="bold" font-family="monospace">N4: Penalizar ($25)</text>
+
+              <!-- NODO N5: EXIT -->
+              <ellipse cx="300" cy="298" rx="52" ry="22"
+                       fill="#1e293b"
+                       stroke="#38bdf8"
+                       stroke-width="2.5" />
+              <text x="300" y="302" text-anchor="middle" fill="#e0f2fe" font-size="11" font-weight="bold" font-family="monospace">N5: RETURN</text>
+            </svg>
+
+            <div class="w-full mt-2 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono-code text-slate-300">
+              <template x-if="cfgCaminoActivo === 1">
+                <div><strong class="text-amber-400">Camino 1 (N1 → N2 → N5):</strong> <code>cancelacionTardia = false</code>. Por evaluación de cortocircuito del operador <code>&amp;&amp;</code>, el nodo P2 (<code>!esEmergencia</code>) ni siquiera se evalúa. Retorna <code>penalizado: false, monto: 0</code>.</div>
+              </template>
+              <template x-if="cfgCaminoActivo === 2">
+                <div><strong class="text-amber-400">Camino 2 (N1 → N2 → N3 → N5):</strong> <code>cancelacionTardia = true</code> y <code>esEmergencia = true</code> (por tanto <code>!esEmergencia = false</code>). El paciente canceló con menos de 24h pero por urgencia médica justificada. Retorna <code>penalizado: false, monto: 0</code>.</div>
+              </template>
+              <template x-if="cfgCaminoActivo === 3">
+                <div><strong class="text-emerald-400">Camino 3 (N1 → N2 → N3 → N4 → N5):</strong> <code>cancelacionTardia = true</code> y <code>esEmergencia = false</code> (<code>!esEmergencia = true</code>). Ambos predicados son verdaderos: ejecuta <code>aplicarPenalizacion()</code> y retorna <code>penalizado: true, monto: 25</code>.</div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Auditoría Topológica de Todas las Funciones + Paso 5 Refactorización -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Síntesis del Framework (Diapositiva 11 • Paso 5: Refactorización Guiada)</span>
+        <h3 class="text-base sm:text-lg font-bold text-slate-900 mt-0.5 mb-3">Matriz de Complejidad Ciclomática V(G) de la Aplicación</h3>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-900 text-white">
+                <th class="p-3 rounded-tl-xl">Función / Módulo</th>
+                <th class="p-3">Regla de Negocio</th>
+                <th class="p-3 text-right">Predicados (P)</th>
+                <th class="p-3 text-right">McCabe V(G) = P + 1</th>
+                <th class="p-3 text-right">Tests Exigidos</th>
+                <th class="p-3 rounded-tr-xl">Dictamen QA (Umbral V(G) &le; 10)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr class="bg-rose-50/70">
+                <td class="p-3 font-mono-code font-semibold text-rose-900">agendarCitaMonoliticaSinRefactorizar()</td>
+                <td class="p-3 text-rose-800">Output inicial IA sin modularizar (Espagueti)</td>
+                <td class="p-3 text-right font-mono-code text-rose-900">14</td>
+                <td class="p-3 text-right font-mono-code font-bold text-rose-700">15</td>
+                <td class="p-3 text-right font-mono-code">15</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-bold text-xs">RECHAZADO (V(G) &gt; 10 → Refactorizar)</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono-code font-semibold">validarReglaEdad()</td>
+                <td class="p-3">Regla 1: Edad pediátrica (&lt;18 con tutor) vs. adulta</td>
+                <td class="p-3 text-right font-mono-code">4</td>
+                <td class="p-3 text-right font-mono-code font-bold text-emerald-700">5</td>
+                <td class="p-3 text-right font-mono-code">5</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-xs">APROBADO (100% Ramas &amp; MC/DC)</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono-code font-semibold">validarHorarioOperativo()</td>
+                <td class="p-3">Regla 2: Lunes-Viernes (08:00-18:00) y bloqueo 13:00</td>
+                <td class="p-3 text-right font-mono-code">5</td>
+                <td class="p-3 text-right font-mono-code font-bold text-emerald-700">6</td>
+                <td class="p-3 text-right font-mono-code">6</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-xs">APROBADO (100% Ramas &amp; MC/DC)</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-mono-code font-semibold">verificarChoqueCitas()</td>
+                <td class="p-3">Regla 3: Prevención de doble reserva por médico/hora</td>
+                <td class="p-3 text-right font-mono-code">3</td>
+                <td class="p-3 text-right font-mono-code font-bold text-emerald-700">4</td>
+                <td class="p-3 text-right font-mono-code">4</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-xs">APROBADO (100% Ramas)</span></td>
+              </tr>
+              <tr class="bg-amber-50/50">
+                <td class="p-3 font-mono-code font-semibold">evaluarPenalizacionCancelacion()</td>
+                <td class="p-3">Regla 4 (Diapositiva 8): Penalización tardía &lt;24h y emergencia</td>
+                <td class="p-3 text-right font-mono-code">2</td>
+                <td class="p-3 text-right font-mono-code font-bold text-emerald-700">3</td>
+                <td class="p-3 text-right font-mono-code">3</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-xs">APROBADO (Caso Estrella PDF)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 3: LABORATORIO DEL FALSO 100%, MODELO PIE Y MUTACIÓN        -->
+    <!-- =================================================================== -->
+    <section x-show="tabActiva === 'tests'" x-cloak class="space-y-6">
+
+      <!-- Comparador Interactivo: Test Zombi (Paso 2) vs. Test Auditor QA (Paso 3) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Tarjeta Izquierda: El Engaño del Falso 100% (Diapositiva 9) -->
+        <div class="bg-white rounded-2xl border-2 border-rose-200 p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-rose-600">Taller Paso 2 • El Desarrollador Copiador</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">FALSO POSITIVO</span>
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Prompt Ingenuo → «Tests Zombis»</h3>
+            <p class="text-xs text-slate-600 mt-1">
+              Ejecuta las líneas para pintar la consola de verde (<code>Lines: 100%</code>), pero omite el Camino 2 (<code>cancelacionTardia=true, esEmergencia=true</code>) y carece de oráculos estrictos (Fallo de <strong>Detection</strong> en el Modelo PIE).
+            </p>
+
+            <div class="bg-slate-900 text-slate-100 rounded-xl p-3.5 font-mono-code text-xs mt-3 space-y-1">
+              <div class="text-rose-400">// Prompt: "Escribe tests para la función en Jest"</div>
+              <div>test('Test Zombi 1', () =&gt; {</div>
+              <div class="pl-4">const res = evaluarPenalizacionCancelacion(true, false, () =&gt; {});</div>
+              <div class="pl-4 text-amber-300">expect(res).toBeDefined(); // ¡Oráculo débil! No verifica monto ni llamada</div>
+              <div>});</div>
+              <div>test('Test Zombi 2', () =&gt; {</div>
+              <div class="pl-4">const res = evaluarPenalizacionCancelacion(false, false, () =&gt; {});</div>
+              <div class="pl-4 text-amber-300">expect(typeof res).toBe('object'); // ¡Falta el Camino 2 (true, true)!</div>
+              <div>});</div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <div class="text-xs">
+              <span class="font-semibold text-slate-700">Líneas ejecutadas:</span> <span class="font-mono-code font-bold text-emerald-600">100% (Engañoso)</span><br>
+              <span class="font-semibold text-slate-700">Mutantes detectados:</span> <span class="font-mono-code font-bold text-rose-600">0 / 3 (0%)</span>
+            </div>
+            <button type="button"
+                    @click="ejecutarSimulacionSuite('zombi')"
+                    class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition">
+              Simular Test Zombi
+            </button>
+          </div>
+        </div>
+
+        <!-- Tarjeta Derecha: Re-Prompting del Ingeniero QA Auditor (Diapositiva 10) -->
+        <div class="bg-white rounded-2xl border-2 border-emerald-300 p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Taller Paso 3 • El Ingeniero QA Auditor</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">ORÁCULOS ESTRICTOS</span>
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Re-Prompting Matemático con V(G) = 3</h3>
+            <p class="text-xs text-slate-600 mt-1">
+              Exige exactamente <code>V(G) = 3</code> tests independientes para la Regla 4 (y 19 tests en total para las 4 reglas), verificando valor de retorno, monto exacto (<code>$25</code> vs <code>$0</code>) y número de invocaciones del espía (<code>mock</code>).
+            </p>
+
+            <div class="bg-slate-900 text-slate-100 rounded-xl p-3.5 font-mono-code text-xs mt-3 space-y-1">
+              <div class="text-emerald-400">// Prompt del Auditor QA (Diapositiva 10):</div>
+              <div class="text-slate-200">"Actúa como Ingeniero de QA. He calculado que la Complejidad</div>
+              <div class="text-slate-200">Ciclomática V(G) de esta función es 3. Genera exactamente 3</div>
+              <div class="text-slate-200">tests unitarios que cubran los 3 caminos independientes. Usa</div>
+              <div class="text-slate-200">Cobertura de Ramas e incluye aserciones estrictas (oráculos)</div>
+              <div class="text-slate-200">para verificar la penalización."</div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <div class="text-xs">
+              <span class="font-semibold text-slate-700">Cobertura Ramas / MC-DC:</span> <span class="font-mono-code font-bold text-emerald-600">100% Real (19/19 tests)</span><br>
+              <span class="font-semibold text-slate-700">Mutantes detectados:</span> <span class="font-mono-code font-bold text-emerald-600">3 / 3 (100%)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      @click="copiarPromptAuditor()"
+                      class="px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition">
+                Copiar Prompt QA
+              </button>
+              <button type="button"
+                      @click="ejecutarSimulacionSuite('auditor')"
+                      class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition">
+                Ejecutar 19 Tests QA
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consola de Resultados de Cobertura y Simulador de Mutación (Diapositiva 12, Pregunta 4) -->
+      <div class="bg-slate-900 text-slate-100 rounded-2xl p-5 border border-slate-800 shadow-md space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Laboratorio de Mutación en Vivo (Modelo PIE: Execution → Infection → Detection)</span>
+            <h3 class="text-base font-bold">Inyecta un Bug (Mutante) y Compara quién lo detecta</h3>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button"
+                    @click="mutanteActivo = 0"
+                    :class="mutanteActivo === 0 ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              Código Original (Sin Bugs)
+            </button>
+            <button type="button"
+                    @click="mutanteActivo = 1"
+                    :class="mutanteActivo === 1 ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              Mutante 1: || en vez de &amp;&amp;
+            </button>
+            <button type="button"
+                    @click="mutanteActivo = 2"
+                    :class="mutanteActivo === 2 ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              Mutante 2: Borrar ! en esEmergencia
+            </button>
+            <button type="button"
+                    @click="mutanteActivo = 3"
+                    :class="mutanteActivo === 3 ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              Mutante 3: Omitir aplicarPenalizacion()
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono-code text-xs">
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-slate-400 mb-1">1. Código Mutado Bajo Prueba:</div>
+            <div class="text-amber-300 font-semibold" x-text="obtenerInfoMutante().codigo"></div>
+            <p class="text-slate-400 mt-2 font-sans text-xs" x-text="obtenerInfoMutante().efecto"></p>
+          </div>
+
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-slate-400 mb-1">2. Resultado en Test Zombi (Paso 2):</div>
+            <div class="text-emerald-400 font-bold">PASS (2/2 tests en verde)</div>
+            <p class="mt-2 font-sans text-xs"
+               :class="mutanteActivo === 0 ? 'text-slate-400' : 'text-rose-400 font-semibold'"
+               x-text="mutanteActivo === 0 ? 'Pasa correctamente porque no hay bug.' : '¡PELIGRO! El mutante SOBREVIVIÓ. Como solo hace expect(res).toBeDefined(), no detecta el bug (Fallo de Detection).'"></p>
+          </div>
+
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <div class="text-slate-400 mb-1">3. Resultado en Suite Auditor QA (Paso 3):</div>
+            <div :class="mutanteActivo === 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'"
+                 x-text="mutanteActivo === 0 ? 'PASS (19/19 tests en verde - 100% Branch)' : 'FAIL (¡Mutante Matado! Bug detectado)'"></div>
+            <p class="mt-2 font-sans text-xs text-emerald-300" x-text="obtenerInfoMutante().oraculoQueAtrapa"></p>
+          </div>
+        </div>
+
+        <!-- Reporte de Terminal Real Pre-verificado -->
+        <div class="bg-black/80 rounded-xl p-4 font-mono-code text-xs text-emerald-400 overflow-x-auto border border-slate-800">
+          <div class="text-slate-400 mb-1">$ npm run test:nativo  # (node --test --experimental-test-coverage tests/reglasCitas.test.js)</div>
+          <pre class="leading-relaxed">✔ AUDITORÍA QA - REGLA 4 (Diapositivas 8-10): Penalización Tardía [V(G) = 3] (4 tests)
+✔ AUDITORÍA QA - REGLA 1: Validación de Edad Pediátrica vs. Adulta [V(G) = 5 MC/DC] (5 tests)
+✔ AUDITORÍA QA - REGLA 2: Restricción de Horarios Operativos [V(G) = 6 MC/DC] (6 tests)
+✔ AUDITORÍA QA - REGLA 3: Prevención de Choque de Citas [V(G) = 4] (4 tests)
+---------------------------------------------------------------------------------
+file                     | line % | branch % | funcs % | uncovered lines
+src/reglasCitas.js       | 100.00 |   100.00 |  100.00 | (0 zonas ciegas)
+tests/reglasCitas.test.js| 100.00 |   100.00 |  100.00 |
+all files                | 100.00 |   100.00 |  100.00 | (19 passed, 0 failed)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 4: GUÍA PASO A PASO Y GUION PARA LA EXPOSICIÓN DE MAÑANA    -->
+    <!-- =================================================================== -->
+    <section x-show="tabActiva === 'guia'" x-cloak class="space-y-6">
+
+      <!-- Guion de Exposición en 5 Minutos -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Preparación para tu Exposición de Mañana</span>
+          <h2 class="text-lg font-bold text-slate-900">Guion Estructurado Paso a Paso y Respuestas al Cuestionario (Diapositiva 12)</h2>
+          <p class="text-xs text-slate-600 mt-1">Sigue estos 5 bloques en orden frente a tu profesor o compañeros mientras muestras esta aplicación y la terminal.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="font-bold text-sm text-slate-900">1. Introducción y Prompt Maestro (Diapositivas 1–4)</div>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">
+              Explica que usaste la IA para construir el sistema de citas médicas en <strong>Node.js (Express), SQLite y Alpine.js</strong> con las 4 reglas críticas (Edad pediátrica vs. adulta, Horarios hábiles con bloqueo de almuerzo 13:00, Choque de citas y Penalización tardía &lt; 24h). Recalca la tesis central: <em>«La IA escribe el código en segundos; nuestro rol como Ingenieros QA es auditar matemáticamente su estructura interna (Caja Blanca)»</em>.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="font-bold text-sm text-slate-900">2. Cálculo de McCabe y Refactorización (Diapositivas 5, 6, 8 y 11)</div>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">
+              Abre la <strong>Pestaña 2 (Grafo CFG &amp; McCabe)</strong>. Muestra que si la IA genera una sola función monolítica, su complejidad sube a <code>V(G) = 15</code> (superando el límite de 10), por lo que aplicaste el <strong>Paso 5 (Refactorización Guiada)</strong> dividiéndola en 4 funciones puras. En <code>if (cancelacionTardia &amp;&amp; !esEmergencia)</code>, demuestra que hay <code>P = 2</code> nodos predicado y por tanto <code>V(G) = P + 1 = 3</code> caminos independientes.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="font-bold text-sm text-slate-900">3. El Engaño del Falso 100% y Modelo PIE (Diapositivas 7 y 9)</div>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">
+              Abre la <strong>Pestaña 3 (Falso 100% &amp; Mutación)</strong>. Explica el hallazgo clave: con solo 2 tests (<code>true, false</code> y <code>false, false</code>), las herramientas reportan <code>100% Lines</code> porque todas las líneas se tocaron, ¡pero jamás se probó el <strong>Camino 2</strong> (<code>cancelacionTardia = true, esEmergencia = true</code>)! Además, sin aserciones fuertes falla la fase de <strong>Detection</strong> del Modelo PIE (Test Zombi).
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="font-bold text-sm text-slate-900">4. Re-Prompting del Auditor y Mutación (Diapositivas 10, 12 y 13)</div>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">
+              Muestra cómo con el <strong>Prompt del Auditor QA</strong> exigiste exactamente los <code>V(G)</code> caminos independientes y oráculos estrictos (validando monto exacto de <code>$25</code> y espía <code>mock</code>). Haz clic en los <strong>3 Mutantes</strong> para demostrar que el Test Zombi deja pasar los 3 bugs (0% efectividad), mientras tu suite QA atrapa los 3 (100% efectividad).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuestionario de Reflexión Metacognitiva Resuelto (Diapositiva 12) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Diapositiva 12 • Respuestas listas para preguntas del profesor</span>
+        <h3 class="text-base font-bold text-slate-900">Cuestionario de Auditoría Resuelto</h3>
+
+        <div class="space-y-2.5 text-xs sm:text-sm">
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <p class="font-bold text-slate-900">1. ¿Conozco el número exacto de caminos lógicos V(G) antes de leer los tests generados por la IA?</p>
+            <p class="text-slate-700 mt-1"><strong>Respuesta:</strong> Sí. Antes de pedir los tests, calculamos <code>V(G) = P + 1</code> para cada regla: Regla de Penalización Tardía <code>V(G) = 3</code>, Choque de Citas <code>V(G) = 4</code>, Regla de Edad <code>V(G) = 5</code> y Horario Operativo <code>V(G) = 6</code>. Ese número es nuestro límite mínimo innegociable de pruebas unitarias.</p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <p class="font-bold text-slate-900">2. ¿El 100% de cobertura que reporta la herramienta incluye aserciones (oráculos) fuertes?</p>
+            <p class="text-slate-700 mt-1"><strong>Respuesta:</strong> En la suite auditada sí: cada test verifica con <code>assert.strictEqual</code> el booleano de autorización/penalización, el código exacto de negocio, el monto monetario (<code>$25</code> vs <code>$0</code>) y cuántas veces fue invocada la función <code>aplicarPenalizacion()</code> mediante un espía (cumpliendo Execution, Infection y Detection del Modelo PIE).</p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <p class="font-bold text-slate-900">3. ¿Están evaluadas todas las condiciones lógicas, o solo las líneas de código superficiales?</p>
+            <p class="text-slate-700 mt-1"><strong>Respuesta:</strong> Están evaluadas todas las ramas (Branch Coverage) y sub-condiciones booleanas individuales (MC/DC), incluyendo el caso crítico donde <code>cancelacionTardia = true</code> se combina con <code>esEmergencia = true</code> para garantizar la exoneración por urgencia médica.</p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <p class="font-bold text-slate-900">4. ¿He forzado intencionalmente fallos (mutaciones) para verificar si los tests de la IA los detectan?</p>
+            <p class="text-slate-700 mt-1"><strong>Respuesta:</strong> Sí, creamos el script <code>tests/mutacion_qa.js</code> inyectando 3 mutaciones: cambiar <code>&amp;&amp;</code> por <code>||</code>, quitar la negación <code>!</code> en <code>!esEmergencia</code>, y comentar la llamada a <code>aplicarPenalizacion()</code>. El Test Zombi falló en detectar las 3 (0/3), mientras que la Suite del Auditor QA detectó y mató a los 3 mutantes (3/3).</p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <p class="font-bold text-slate-900">5. ¿Es la complejidad del código generado tan alta que la acción correcta es refactorizar en lugar de testear?</p>
+            <p class="text-slate-700 mt-1"><strong>Respuesta:</strong> Cuando la IA junta todas las validaciones en un solo endpoint o función monolítica (<code>src/codigoEspaguetiIA.js</code>), alcanza <code>V(G) = 15</code> (&gt; 10). Aplicando el Paso 5 del Framework, ordenamos refactorizarla en 4 funciones puras en <code>src/reglasCitas.js</code> donde ninguna supera <code>V(G) = 6</code>.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 5: GITHUB CODESPACES Y CÓDIGO COMENTADO LÍNEA POR LÍNEA     -->
+    <!-- =================================================================== -->
+    <section x-show="tabActiva === 'codigo'" x-cloak class="space-y-6">
+
+      <!-- Guía Paso a Paso para GitHub Codespaces -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Ejecución en la Nube • GitHub Codespaces</span>
+            <h2 class="text-lg font-bold text-slate-900">Cómo Ejecutar Todo en GitHub Codespaces y Ver la Web en Vivo</h2>
+          </div>
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-mono-code text-xs font-semibold">
+            .devcontainer/devcontainer.json incluido
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="font-bold text-slate-900">Paso 1: Abrir tu Codespace</div>
+            <p class="text-slate-700 text-xs leading-relaxed">
+              Sube la carpeta descomprimida a tu repositorio de GitHub, pulsa el botón verde <strong>&lt;&gt; Code</strong> → pestaña <strong>Codespaces</strong> → <strong>Create codespace on main</strong>. El archivo <code>.devcontainer/devcontainer.json</code> configurará Node.js y el puerto <code>3000</code> automáticamente.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="font-bold text-slate-900">Paso 2: Ver la Web en el Navegador</div>
+            <p class="text-slate-700 text-xs leading-relaxed">
+              En la terminal de Codespaces escribe <code>npm start</code> (o <code>node src/server.js</code>). Abajo a la derecha aparecerá el botón <strong>Open in Browser</strong> (o ve a la pestaña <strong>PORTS</strong> junto a <code>TERMINAL</code> y haz clic en el ícono del globo del puerto <strong>3000</strong>).
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="font-bold text-slate-900">Paso 3: Correr Cobertura y Mutación</div>
+            <p class="text-slate-700 text-xs leading-relaxed">
+              En otra terminal ejecuta:<br>
+              • <code>npm run test:nativo</code> (19 tests + 100% ramas)<br>
+              • <code>npm run test:mutacion</code> (3 mutantes Modelo PIE)<br>
+              • <code>node --test --experimental-test-coverage tests/trampa_zombi.test.js</code>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explicación por Bloques y Código Comentado Línea por Línea -->
+      <div class="bg-slate-900 text-slate-100 rounded-2xl p-5 sm:p-6 border border-slate-800 shadow-md space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Explicación Completa del Código • Línea por Línea</span>
+            <h3 class="text-base sm:text-lg font-bold text-white">Selecciona un Archivo para Estudiar Qué Hace Cada Parte y Cada Línea</h3>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button"
+                    @click="archivoCodigoActivo = 'reglas'"
+                    :class="archivoCodigoActivo === 'reglas' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              src/reglasCitas.js
+            </button>
+            <button type="button"
+                    @click="archivoCodigoActivo = 'tests'"
+                    :class="archivoCodigoActivo === 'tests' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              tests/reglasCitas.test.js
+            </button>
+            <button type="button"
+                    @click="archivoCodigoActivo = 'server'"
+                    :class="archivoCodigoActivo === 'server' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              src/server.js &amp; db.js
+            </button>
+            <button type="button"
+                    @click="archivoCodigoActivo = 'mutacion'"
+                    :class="archivoCodigoActivo === 'mutacion' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              tests/mutacion_qa.js
+            </button>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-slate-200 leading-relaxed"
+             x-text="obtenerExplicacionArchivoActivo()">
+        </div>
+
+        <div class="bg-black/90 rounded-xl p-4 font-mono-code text-xs text-emerald-300 overflow-x-auto border border-slate-800 max-h-96 overflow-y-auto">
+          <pre class="leading-relaxed" x-text="obtenerCodigoComentadoActivo()"></pre>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Lógica Completa en Alpine.js (Mismas Reglas Exactas que src/reglasCitas.js + Conexión API Express/SQLite) -->
+  <script>
+    function appCitasQA() {
+      return {
+        tabActiva: 'app', // Controla qué pestaña de las 5 está visible en pantalla
+        archivoCodigoActivo: 'reglas', // Controla qué archivo comentado se muestra en la Pestaña 5
+        modoPersistencia: 'SQLite Local / En-Memoria', // Muestra el motor de base de datos activo
+        cfgCaminoActivo: 3, // Camino de McCabe seleccionado en el diagrama SVG (1, 2 o 3)
+        mutanteActivo: 0, // Bug/mutante seleccionado en el laboratorio PIE (0 = original, 1..3 = mutantes)
+
+        toast: {
+          visible: false,
+          tipo: 'exito',
+          titulo: '',
+          mensaje: '',
+          caminoMcCabe: ''
+        },
+
+        formCita: {
+          paciente: 'Mateo Rivera',
+          edad: 10,
+          tieneAcompaniante: true,
+          medicoId: 'DR_GOMEZ',
+          fecha: '2026-10-20',
+          hora: '15:00'
+        },
+
+        formCancelacion: {
+          citaId: 101,
+          horasAnticipacion: 6,
+          esEmergencia: false
+        },
+
+        ultimaTraza: {
+          exito: true,
+          codigo: 'SISTEMA_LISTO',
+          regla: 'Motor de Auditoría McCabe Activo',
+          camino: 'Esperando ejecución de reserva o cancelación...',
+          detalle: 'Selecciona un escenario rápido arriba o completa el formulario.'
+        },
+
+        citas: [],
+
+        async inicializar() {
+          await this.cargarCitasIniciales();
+        },
+
+        mostrarToast(tipo, titulo, mensaje, caminoMcCabe = '') {
+          this.toast = { visible: true, tipo, titulo, mensaje, caminoMcCabe };
+        },
+
+        obtenerEtiquetaDia(fechaStr) {
+          if (!fechaStr) return 'Selecciona una fecha';
+          const partes = fechaStr.split('-').map(Number);
+          const fechaObj = new Date(partes[0], partes[1] - 1, partes[2]);
+          const dias = ['Domingo (Cerrado)', 'Lunes (Hábil)', 'Martes (Hábil)', 'Miércoles (Hábil)', 'Jueves (Hábil)', 'Viernes (Hábil)', 'Sábado (Cerrado)'];
+          return 'Día detectado: ' + dias[fechaObj.getDay()];
+        },
+
+        // --- Las 4 Reglas Auditadas idénticas a src/reglasCitas.js ---
+        validarReglaEdad(edad, tieneAcompaniante) {
+          if (edad < 0 || edad > 120) {
+            return {
+              valido: false,
+              categoria: 'EDAD_INVALIDA',
+              duracionMinutos: 0,
+              requiereAcompaniante: false,
+              codigo: 'ERR_RANGO_EDAD',
+              camino: 'Regla 1 • Camino 1/2 (edad < 0 || edad > 120 = True)',
+              mensaje: 'La edad debe estar comprendida entre 0 y 120 años.'
+            };
+          }
+          if (edad < 18) {
+            if (!tieneAcompaniante) {
+              return {
+                valido: false,
+                categoria: 'PEDIATRICO',
+                duracionMinutos: 0,
+                requiereAcompaniante: true,
+                codigo: 'ERR_MENOR_SIN_TUTOR',
+                camino: 'Regla 1 • Camino 3 (edad < 18 = True && !tieneAcompaniante = True)',
+                mensaje: 'Paciente pediátrico (< 18 años) requiere acudir con un adulto responsable.'
+              };
+            }
+            return {
+              valido: true,
+              categoria: 'PEDIATRICO',
+              duracionMinutos: 40,
+              requiereAcompaniante: true,
+              codigo: 'OK_PEDIATRICO',
+              camino: 'Regla 1 • Camino 4 (edad < 18 = True && !tieneAcompaniante = False)',
+              mensaje: 'Cita pediátrica validada con acompañante adulto (duración: 40 min).'
+            };
+          }
+          return {
+            valido: true,
+            categoria: 'ADULTO',
+            duracionMinutos: 30,
+            requiereAcompaniante: false,
+            codigo: 'OK_ADULTO',
+            camino: 'Regla 1 • Camino 5 (edad >= 18)',
+            mensaje: 'Cita de medicina familiar para adulto validada (duración: 30 min).'
+          };
+        },
+
+        validarHorarioOperativo(diaSemana, hora) {
+          if (diaSemana === 0 || diaSemana === 6) {
+            return {
+              operativo: false,
+              codigo: 'ERR_FIN_DE_SEMANA',
+              camino: 'Regla 2 • Camino 1/2 (diaSemana === 0 || diaSemana === 6 = True)',
+              mensaje: 'El consultorio permanece cerrado los sábados y domingos.'
+            };
+          }
+          if (hora < 8 || hora >= 18) {
+            return {
+              operativo: false,
+              codigo: 'ERR_FUERA_DE_HORARIO',
+              camino: 'Regla 2 • Camino 3/4 (hora < 8 || hora >= 18 = True)',
+              mensaje: 'Franja no operativa. El horario de atención es de 08:00 a 18:00.'
+            };
+          }
+          if (hora === 13) {
+            return {
+              operativo: false,
+              codigo: 'ERR_HORA_ALMUERZO',
+              camino: 'Regla 2 • Camino 5 (hora === 13 = True → Bloqueo Almuerzo)',
+              mensaje: 'Franja de 13:00 a 14:00 bloqueada por receso de almuerzo médico.'
+            };
+          }
+          return {
+            operativo: true,
+            codigo: 'OK_HORARIO_HABIL',
+            camino: 'Regla 2 • Camino 6 (Día hábil y hora operativa válida)',
+            mensaje: 'Franja horaria operativa disponible.'
+          };
+        },
+
+        verificarChoqueCitas(nuevaCita, citasExistentes) {
+          for (const cita of citasExistentes) {
+            if (
+              cita.estado !== 'CANCELADA' &&
+              cita.medicoId === nuevaCita.medicoId &&
+              cita.fecha === nuevaCita.fecha
+            ) {
+              if (nuevaCita.inicioMin < cita.finMin && nuevaCita.finMin > cita.inicioMin) {
+                return {
+                  hayChoque: true,
+                  citaConflictoId: cita.id,
+                  codigo: 'ERR_CHOQUE_CITA',
+                  camino: 'Regla 3 • Camino 4 (Solapamiento de intervalo detectado con cita #' + cita.id + ')',
+                  mensaje: 'Choque de horario detectado con la cita #' + cita.id + ' (' + cita.paciente + ' a las ' + cita.hora + ').'
+                };
+              }
+            }
+          }
+          return {
+            hayChoque: false,
+            citaConflictoId: null,
+            codigo: 'OK_DISPONIBLE',
+            camino: 'Regla 3 • Camino 3 (Sin solapamiento de horarios)',
+            mensaje: 'No existen choques de horario para el médico y fecha seleccionados.'
+          };
+        },
+
+        evaluarPenalizacionCancelacion(cancelacionTardia, esEmergencia, aplicarPenalizacion) {
+          if (cancelacionTardia && !esEmergencia) {
+            aplicarPenalizacion();
+            return {
+              penalizado: true,
+              montoPenalizacion: 25,
+              codigo: 'PENALIZACION_APLICADA',
+              camino: 'Regla 4 • Camino 3 de McCabe (cancelacionTardia=True && !esEmergencia=True)',
+              mensaje: 'Cancelación con menos de 24h sin emergencia justificada: cargo de $25.00 USD aplicado.'
+            };
+          }
+          const caminoStr = !cancelacionTardia
+            ? 'Regla 4 • Camino 1 de McCabe (cancelacionTardia=False → Cortocircuito)'
+            : 'Regla 4 • Camino 2 de McCabe (cancelacionTardia=True && !esEmergencia=False → Exento por Emergencia)';
+          return {
+            penalizado: false,
+            montoPenalizacion: 0,
+            codigo: 'SIN_PENALIZACION',
+            camino: caminoStr,
+            mensaje: esEmergencia
+              ? 'Exento de penalización ($0.00) por emergencia médica justificada.'
+              : 'Cancelación realizada con 24h o más de anticipación: sin cargo ($0.00).'
+          };
+        },
+
+        cargarCitasIniciales() {
+          this.restaurarCitasSemilla(false);
+        },
+
+        restaurarCitasSemilla(notificar = true) {
+          this.citas = [
+            {
+              id: 101,
+              paciente: 'Carlos Ruiz',
+              edad: 42,
+              categoria: 'ADULTO',
+              tieneAcompaniante: false,
+              medicoId: 'DR_GOMEZ',
+              medicoNombre: 'Dr. Alejandro Gómez (Medicina Familiar)',
+              fecha: '2026-10-20',
+              hora: '10:00',
+              inicioMin: 600,
+              finMin: 630,
+              duracionMinutos: 30,
+              estado: 'CONFIRMADA',
+              penalizado: false,
+              montoPenalizacion: 0
+            },
+            {
+              id: 102,
+              paciente: 'Sofía Andrade',
+              edad: 8,
+              categoria: 'PEDIATRICO',
+              tieneAcompaniante: true,
+              medicoId: 'DR_GOMEZ',
+              medicoNombre: 'Dr. Alejandro Gómez (Medicina Familiar)',
+              fecha: '2026-10-20',
+              hora: '11:00',
+              inicioMin: 660,
+              finMin: 700,
+              duracionMinutos: 40,
+              estado: 'CONFIRMADA',
+              penalizado: false,
+              montoPenalizacion: 0
+            }
+          ];
+          this.formCancelacion.citaId = 101;
+          if (notificar) {
+            this.mostrarToast('exito', 'Agenda Restaurada', 'Se restauraron las citas semilla de demostración.', 'SQLite Seed Reset');
+          }
+        },
+
+        cargarEscenarioDemo(tipo) {
+          if (tipo === 'menor_sin_tutor') {
+            this.formCita = {
+              paciente: 'Lucas Méndez (Menor sin tutor)',
+              edad: 9,
+              tieneAcompaniante: false,
+              medicoId: 'DR_GOMEZ',
+              fecha: '2026-10-20',
+              hora: '09:00'
+            };
+          } else if (tipo === 'horario_almuerzo') {
+            this.formCita = {
+              paciente: 'Elena Vargas (Intento 13:15 Almuerzo)',
+              edad: 34,
+              tieneAcompaniante: false,
+              medicoId: 'DR_GOMEZ',
+              fecha: '2026-10-20',
+              hora: '13:15'
+            };
+          } else if (tipo === 'choque_citas') {
+            this.formCita = {
+              paciente: 'Roberto Paz (Solapa 10:15 con Carlos Ruiz)',
+              edad: 29,
+              tieneAcompaniante: false,
+              medicoId: 'DR_GOMEZ',
+              fecha: '2026-10-20',
+              hora: '10:15'
+            };
+          } else if (tipo === 'cita_valida') {
+            this.formCita = {
+              paciente: 'Valentina Castro',
+              edad: 7,
+              tieneAcompaniante: true,
+              medicoId: 'DRA_LOPEZ',
+              fecha: '2026-10-20',
+              hora: '15:00'
+            };
+          }
+          this.agendarCita();
+        },
+
+        agendarCita() {
+          const edadNum = Number(this.formCita.edad);
+          const resEdad = this.validarReglaEdad(edadNum, Boolean(this.formCita.tieneAcompaniante));
+
+          if (!resEdad.valido) {
+            this.ultimaTraza = {
+              exito: false,
+              codigo: resEdad.codigo,
+              regla: 'REGLA 1 BLOQUEADA: Validación Pediátrica vs. Adulta',
+              camino: resEdad.camino,
+              detalle: resEdad.mensaje
+            };
+            this.mostrarToast('error', 'Rechazado por Regla 1 (Edad)', resEdad.mensaje, resEdad.camino);
+            return;
+          }
+
+          const partesFecha = this.formCita.fecha.split('-').map(Number);
+          const fechaObj = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2]);
+          const diaSemana = fechaObj.getDay();
+          const partesHora = this.formCita.hora.split(':').map(Number);
+          const horaNum = partesHora[0];
+          const minNum = partesHora[1] || 0;
+
+          const resHorario = this.validarHorarioOperativo(diaSemana, horaNum);
+          if (!resHorario.operativo) {
+            this.ultimaTraza = {
+              exito: false,
+              codigo: resHorario.codigo,
+              regla: 'REGLA 2 BLOQUEADA: Restricción de Horarios Operativos',
+              camino: resHorario.camino,
+              detalle: resHorario.mensaje
+            };
+            this.mostrarToast('alerta', 'Rechazado por Regla 2 (Horario)', resHorario.mensaje, resHorario.camino);
+            return;
+          }
+
+          const inicioMin = horaNum * 60 + minNum;
+          const finMin = inicioMin + resEdad.duracionMinutos;
+          const resChoque = this.verificarChoqueCitas(
+            {
+              medicoId: this.formCita.medicoId,
+              fecha: this.formCita.fecha,
+              inicioMin,
+              finMin
+            },
+            this.citas
+          );
+
+          if (resChoque.hayChoque) {
+            this.ultimaTraza = {
+              exito: false,
+              codigo: resChoque.codigo,
+              regla: 'REGLA 3 BLOQUEADA: Prevención de Doble Reserva (Choque)',
+              camino: resChoque.camino,
+              detalle: resChoque.mensaje
+            };
+            this.mostrarToast('error', 'Rechazado por Regla 3 (Choque de Citas)', resChoque.mensaje, resChoque.camino);
+            return;
+          }
+
+          const nuevoId = this.citas.length > 0 ? Math.max(...this.citas.map((c) => c.id)) + 1 : 101;
+          const medicoNombre = this.formCita.medicoId === 'DR_GOMEZ'
+            ? 'Dr. Alejandro Gómez (Medicina Familiar)'
+            : 'Dra. Valeria López (Medicina Familiar & Pediatría)';
+
+          const nuevaCita = {
+            id: nuevoId,
+            paciente: this.formCita.paciente,
+            edad: edadNum,
+            categoria: resEdad.categoria,
+            tieneAcompaniante: Boolean(this.formCita.tieneAcompaniante),
+            medicoId: this.formCita.medicoId,
+            medicoNombre,
+            fecha: this.formCita.fecha,
+            hora: this.formCita.hora,
+            inicioMin,
+            finMin,
+            duracionMinutos: resEdad.duracionMinutos,
+            estado: 'CONFIRMADA',
+            penalizado: false,
+            montoPenalizacion: 0
+          };
+
+          this.citas.push(nuevaCita);
+          this.formCancelacion.citaId = nuevaCita.id;
+
+          this.ultimaTraza = {
+            exito: true,
+            codigo: resEdad.codigo,
+            regla: 'CITA AGENDADA: Superó las Reglas 1, 2 y 3',
+            camino: `${resEdad.camino} → ${resHorario.camino} → ${resChoque.camino}`,
+            detalle: `Cita #${nuevaCita.id} registrada para ${nuevaCita.paciente} (${nuevaCita.duracionMinutos} min).`
+          };
+          this.mostrarToast('exito', 'Cita Agendada en SQLite', this.ultimaTraza.detalle, resEdad.codigo);
+        },
+
+        abrirModalCancelacion(cita) {
+          this.formCancelacion.citaId = cita.id;
+          this.ejecutarCancelacionCita();
+        },
+
+        probarCaminoCancelacion(numCamino) {
+          if (numCamino === 1) {
+            this.formCancelacion.horasAnticipacion = 36;
+            this.formCancelacion.esEmergencia = false;
+          } else if (numCamino === 2) {
+            this.formCancelacion.horasAnticipacion = 6;
+            this.formCancelacion.esEmergencia = true;
+          } else if (numCamino === 3) {
+            this.formCancelacion.horasAnticipacion = 6;
+            this.formCancelacion.esEmergencia = false;
+          }
+          this.ejecutarCancelacionCita();
+        },
+
+        ejecutarCancelacionCita() {
+          const cita = this.citas.find((c) => c.id === Number(this.formCancelacion.citaId)) || this.citas[0];
+          const horas = Number(this.formCancelacion.horasAnticipacion);
+          const cancelacionTardia = horas < 24;
+          let callbackInvocado = false;
+
+          const resultado = this.evaluarPenalizacionCancelacion(
+            cancelacionTardia,
+            Boolean(this.formCancelacion.esEmergencia),
+            () => { callbackInvocado = true; }
+          );
+
+          if (cita) {
+            cita.estado = 'CANCELADA';
+            cita.penalizado = callbackInvocado && resultado.penalizado;
+            cita.montoPenalizacion = resultado.montoPenalizacion;
+          }
+
+          this.ultimaTraza = {
+            exito: !resultado.penalizado,
+            codigo: resultado.codigo,
+            regla: 'REGLA 4 AUDITADA: Penalización Tardía [V(G) = 3]',
+            camino: resultado.camino,
+            detalle: `${resultado.mensaje} (Callback aplicarPenalizacion invocado: ${callbackInvocado ? 'SÍ [1 vez]' : 'NO [0 veces]'})`
+          };
+
+          this.mostrarToast(
+            resultado.penalizado ? 'alerta' : 'exito',
+            resultado.penalizado ? 'Penalización Aplicada ($25.00)' : 'Cancelación Sin Cargo ($0.00)',
+            resultado.mensaje,
+            resultado.camino
+          );
+        },
+
+        ejecutarSimulacionSuite(modo) {
+          if (modo === 'zombi') {
+            this.mutanteActivo = 1;
+            this.mostrarToast(
+              'alerta',
+              'Trampa del Falso 100% Demostrada',
+              'El Test Zombi marca 100% Lines pero ignora el Camino 2 y deja sobrevivir a los 3 mutantes.',
+              'Mutation Score: 0/3 (0%)'
+            );
+          } else {
+            this.mutanteActivo = 0;
+            this.mostrarToast(
+              'exito',
+              'Suite Auditor QA: 19/19 Tests en Verde',
+              '100% Sentencias, 100% Ramas (Branch), 100% MC/DC y 3/3 Mutantes detectados.',
+              'V(G) Cubierto al 100%'
+            );
+          }
+        },
+
+        obtenerInfoMutante() {
+          const info = [
+            {
+              codigo: 'if (cancelacionTardia && !esEmergencia) { aplicarPenalizacion(); }',
+              efecto: 'Comportamiento correcto: solo penaliza con $25 si se cancela con menos de 24h y NO es una emergencia.',
+              oraculoQueAtrapa: 'Todos los oráculos estrictos pasan (19/19 tests en verde).'
+            },
+            {
+              codigo: 'if (cancelacionTardia || !esEmergencia) { aplicarPenalizacion(); } // <-- BUG ||',
+              efecto: 'Bug crítico: cobra $25 de multa incluso a pacientes que cancelan con 48 horas de anticipación.',
+              oraculoQueAtrapa: 'Atrapado por Camino 1: assert.strictEqual(res.penalizado, false) falla porque el mutante devuelve true.'
+            },
+            {
+              codigo: 'if (cancelacionTardia && esEmergencia) { aplicarPenalizacion(); } // <-- BUG sin !',
+              efecto: 'Bug crítico: cobra multa a pacientes con emergencia médica real y exonera a quienes cancelan sin justificación.',
+              oraculoQueAtrapa: 'Atrapado por Camino 2 (true, true) y Camino 3 (true, false): los oráculos detectan la inversión booleana.'
+            },
+            {
+              codigo: 'if (cancelacionTardia && !esEmergencia) { /* aplicarPenalizacion() borrado */ }',
+              efecto: 'Bug silencioso: retorna el JSON pero jamás ejecuta el efecto secundario que registra el cargo en base de datos.',
+              oraculoQueAtrapa: 'Atrapado por el espía (mock): assert.strictEqual(spyPenalizacion.llamadas.length, 1) recibe 0.'
+            }
+          ];
+          return info[this.mutanteActivo] || info[0];
+        },
+
+        copiarPromptAuditor() { // Función que copia el Prompt del Ingeniero QA al portapapeles
+          const texto = 'Actúa como Ingeniero de QA. He calculado que la Complejidad Ciclomática V(G) de esta función es 3. Genera exactamente 3 tests unitarios que cubran los 3 caminos independientes. Usa Cobertura de Ramas e incluye aserciones estrictas (oráculos) para verificar la penalización.'; // Texto exacto de la Diapositiva 10
+          try { // Intenta copiar usando un elemento textarea temporal compatible con el navegador
+            const area = document.createElement('textarea'); // Crea un campo de texto invisible en el DOM
+            area.value = texto; // Asigna el texto del prompt al área
+            document.body.appendChild(area); // Inserta el elemento temporalmente en el documento
+            area.select(); // Selecciona todo el texto del área
+            document.execCommand('copy'); // Ejecuta el comando de copiado al portapapeles
+            document.body.removeChild(area); // Elimina el elemento temporal del DOM
+            this.mostrarToast('exito', 'Prompt Copiado al Portapapeles', 'El Prompt del Auditor QA (Diapositiva 10) está listo para pegar.', 'Re-Prompting QA'); // Muestra confirmación visual
+          } catch (_e) { // Si el navegador restringe el portapapeles, muestra el prompt en la notificación
+            this.mostrarToast('alerta', 'Prompt Listo', texto, 'Re-Prompting QA'); // Notificación de respaldo
+          } // Fin del bloque try/catch
+        }, // Fin de copiarPromptAuditor
+
+        obtenerExplicacionArchivoActivo() { // Devuelve el resumen de qué hace el archivo seleccionado en la Pestaña 5
+          if (this.archivoCodigoActivo === 'reglas') { // Explicación de src/reglasCitas.js
+            return 'QUÉ HACE ESTE MÓDULO (src/reglasCitas.js): Implementa las 4 reglas críticas de negocio como funciones puras de baja complejidad ciclomática: 1) validarReglaEdad [V(G)=5], 2) validarHorarioOperativo [V(G)=6], 3) verificarChoqueCitas [V(G)=4] y 4) evaluarPenalizacionCancelacion [V(G)=3].';
+          } else if (this.archivoCodigoActivo === 'tests') { // Explicación de tests/reglasCitas.test.js
+            return 'QUÉ HACE ESTE MÓDULO (tests/reglasCitas.test.js): Ejecuta las 19 pruebas unitarias matemáticas cubriendo el 100% de ramas y sub-condiciones booleanas (MC/DC) con oráculos estrictos (assert.strictEqual) y funciones espía (mock).';
+          } else if (this.archivoCodigoActivo === 'server') { // Explicación de src/server.js y src/db.js
+            return 'QUÉ HACE ESTE MÓDULO (src/server.js y src/db.js): Levanta el servidor Express y HTTP nativo en 0.0.0.0:3000 para GitHub Codespaces, valida las reglas antes de insertar o cancelar citas y persiste los datos en SQLite.';
+          } // Explicación de tests/mutacion_qa.js
+          return 'QUÉ HACE ESTE MÓDULO (tests/mutacion_qa.js): Siembra 3 mutaciones (bugs intencionales) en la función de penalización tardía para demostrar que el Test Zombi detecta 0/3 (0%) mientras la Suite del Auditor QA detecta 3/3 (100%).';
+        }, // Fin de obtenerExplicacionArchivoActivo
+
+        obtenerCodigoComentadoActivo() { // Devuelve el código fuente comentado línea por línea para la Pestaña 5
+          const codigos = {
+            reglas: `// === PARTE 1: REGLA DE EDAD (Pediátrico <18 con tutor vs. Adulto) [V(G) = 5] ===
+function validarReglaEdad(edad, tieneAcompaniante) { // Recibe la edad numérica y si asiste con tutor adulto
+  if (edad < 0 || edad > 120) { // Predicados P1 y P2: Verifica si la edad es negativa o mayor a 120 años
+    return { valido: false, categoria: 'EDAD_INVALIDA', duracionMinutos: 0, codigo: 'ERR_RANGO_EDAD' }; // Caminos 1 y 2: Rechaza edad irreal
+  } // Fin de validación de rango biológico
+  if (edad < 18) { // Predicado P3: Evalúa si el paciente es menor de edad (pediátrico)
+    if (!tieneAcompaniante) { // Predicado P4: Evalúa si NO cuenta con un adulto responsable
+      return { valido: false, categoria: 'PEDIATRICO', duracionMinutos: 0, codigo: 'ERR_MENOR_SIN_TUTOR' }; // Camino 3: Rechaza menor sin tutor
+    } // Fin de validación de tutor
+    return { valido: true, categoria: 'PEDIATRICO', duracionMinutos: 40, codigo: 'OK_PEDIATRICO' }; // Camino 4: Aprueba cita pediátrica (40 min)
+  } // Fin de bloque pediátrico
+  return { valido: true, categoria: 'ADULTO', duracionMinutos: 30, codigo: 'OK_ADULTO' }; // Camino 5: Aprueba adulto (30 min)
+}
+
+// === PARTE 2: RESTRICCIÓN DE HORARIOS (Lun-Vie 08:00-18:00, sin 13:00) [V(G) = 6] ===
+function validarHorarioOperativo(diaSemana, hora) { // Recibe día (0=Dom..6=Sáb) y hora entera (0..23)
+  if (diaSemana === 0 || diaSemana === 6) { // Predicados P1 y P2: Bloquea domingo (0) y sábado (6)
+    return { operativo: false, codigo: 'ERR_FIN_DE_SEMANA' }; // Caminos 1 y 2: Rechazo por fin de semana
+  }
+  if (hora < 8 || hora >= 18) { // Predicados P3 y P4: Bloquea antes de las 08:00 o desde las 18:00
+    return { operativo: false, codigo: 'ERR_FUERA_DE_HORARIO' }; // Caminos 3 y 4: Fuera de horario laboral
+  }
+  if (hora === 13) { // Predicado P5: Bloquea de 13:00 a 14:00 por almuerzo del médico
+    return { operativo: false, codigo: 'ERR_HORA_ALMUERZO' }; // Camino 5: Franja de almuerzo bloqueada
+  }
+  return { operativo: true, codigo: 'OK_HORARIO_HABIL' }; // Camino 6: Franja horaria autorizada
+}
+
+// === PARTE 3: CHOQUE DE CITAS (Prevención de Doble Reserva) [V(G) = 4] ===
+function verificarChoqueCitas(nuevaCita, citasExistentes) { // Recibe nueva cita y lista de citas en BD
+  for (const cita of citasExistentes) { // Predicado P1: Recorre cada cita registrada en SQLite
+    if (cita.estado !== 'CANCELADA' && cita.medicoId === nuevaCita.medicoId && cita.fecha === nuevaCita.fecha) { // P2: Activa, mismo médico y día
+      if (nuevaCita.inicioMin < cita.finMin && nuevaCita.finMin > cita.inicioMin) { // P3: Intersección matemática de intervalos
+        return { hayChoque: true, citaConflictoId: cita.id, codigo: 'ERR_CHOQUE_CITA' }; // Camino 4: Doble reserva bloqueada
+      }
+    }
+  }
+  return { hayChoque: false, citaConflictoId: null, codigo: 'OK_DISPONIBLE' }; // Caminos 1..3: Horario libre
+}
+
+// === PARTE 4: PENALIZACIÓN TARDÍA (<24h) — CASO ESTRELLA DIAPOSITIVA 8 [V(G) = 3] ===
+function evaluarPenalizacionCancelacion(cancelacionTardia, esEmergencia, aplicarPenalizacion) { // Recibe booleanos y callback
+  if (cancelacionTardia && !esEmergencia) { // Predicado P1 (cancelacionTardia) && Predicado P2 (!esEmergencia) -> V(G) = 2 + 1 = 3
+    aplicarPenalizacion(); // Camino 3: Invoca el efecto secundario que aplica el cargo de $25.00
+    return { penalizado: true, montoPenalizacion: 25, codigo: 'PENALIZACION_APLICADA' }; // Retorna multa de $25
+  }
+  return { penalizado: false, montoPenalizacion: 0, codigo: 'SIN_PENALIZACION' }; // Caminos 1 y 2: Sin cargo ($0)
+}`,
+            tests: `// === SUITE AUDITADA CON ORÁCULOS ESTRICTOS (Diapositiva 10) ===
+describe('AUDITORÍA QA - REGLA 4: Penalización Tardía [V(G) = 3]', () => { // Grupo de pruebas para V(G) = 3
+  test('Camino 1 [cancelacionTardia = False]: Cortocircuito, NO penaliza', () => { // Prueba Camino 1
+    const spyPenalizacion = crearMockFn(); // Crea espía para contar llamadas a aplicarPenalizacion()
+    const res = evaluarPenalizacionCancelacion(false, false, spyPenalizacion); // Llama con tardía = false
+    assert.strictEqual(res.penalizado, false); // Oráculo 1: Verifica que penalizado sea false
+    assert.strictEqual(res.montoPenalizacion, 0); // Oráculo 2: Verifica que el monto sea $0
+    assert.strictEqual(spyPenalizacion.llamadas.length, 0); // Oráculo 3: Verifica 0 llamadas al callback
+  });
+
+  test('Camino 2 [cancelacionTardia = True, esEmergencia = True]: Exento por emergencia', () => { // Prueba Camino 2
+    const spyPenalizacion = crearMockFn(); // Crea espía de verificación
+    const res = evaluarPenalizacionCancelacion(true, true, spyPenalizacion); // Tardía pero con emergencia médica
+    assert.strictEqual(res.penalizado, false); // Oráculo 1: Exento de penalización (false)
+    assert.strictEqual(res.montoPenalizacion, 0); // Oráculo 2: Monto cobrado es exactamente $0
+    assert.strictEqual(spyPenalizacion.llamadas.length, 0); // Oráculo 3: El callback jamás se ejecutó
+  });
+
+  test('Camino 3 [cancelacionTardia = True, esEmergencia = False]: Cobra $25', () => { // Prueba Camino 3
+    const spyPenalizacion = crearMockFn(); // Crea espía para confirmar el cobro
+    const res = evaluarPenalizacionCancelacion(true, false, spyPenalizacion); // Tardía y SIN emergencia
+    assert.strictEqual(res.penalizado, true); // Oráculo 1: Confirma que SÍ fue penalizado (true)
+    assert.strictEqual(res.montoPenalizacion, 25); // Oráculo 2: Confirma multa exacta de $25
+    assert.strictEqual(spyPenalizacion.llamadas.length, 1); // Oráculo 3: Callback ejecutado exactamente 1 vez
+  });
+});`,
+            server: `// === SERVIDOR BACKEND COMPATIBLE CON GITHUB CODESPACES (src/server.js) ===
+const PORT = process.env.PORT || 3000; // Usa el puerto 3000 por defecto
+const HOST = '0.0.0.0'; // Escucha en 0.0.0.0 para que GitHub Codespaces habilite el botón 'Open in Browser'
+
+// Flujo del Endpoint POST /api/citas:
+function procesarCreacionCita(body) { // Recibe el JSON enviado desde el formulario Alpine.js
+  const resultadoEdad = validarReglaEdad(Number(body.edad), Boolean(body.tieneAcompaniante)); // 1. Ejecuta Regla 1 (Edad)
+  if (!resultadoEdad.valido) return { status: 400, payload: resultadoEdad }; // Si falla Regla 1, responde HTTP 400
+
+  const resultadoHorario = validarHorarioOperativo(diaSemana, horaNum); // 2. Ejecuta Regla 2 (Horario y Almuerzo)
+  if (!resultadoHorario.operativo) return { status: 400, payload: resultadoHorario }; // Si falla Regla 2, responde HTTP 400
+
+  const resultadoChoque = verificarChoqueCitas(nuevaCita, db.listarCitas()); // 3. Ejecuta Regla 3 (Choque en SQLite)
+  if (resultadoChoque.hayChoque) return { status: 409, payload: resultadoChoque }; // Si hay choque, responde HTTP 409 Conflict
+
+  const citaCreada = db.insertarCita(nuevaCita); // 4. Si pasa las 3 reglas, inserta en la tabla 'citas' de SQLite
+  return { status: 201, payload: { exito: true, cita: citaCreada } }; // Devuelve HTTP 201 Created
+}`,
+            mutacion: `// === PRUEBAS DE MUTACIÓN BAJO EL MODELO PIE (tests/mutacion_qa.js) ===
+// Mutante 1: Cambia '&&' por '||' -> if (cancelacionTardia || !esEmergencia)
+//   - Test Zombi: PASA EN VERDE (Falso Positivo, porque solo hace expect(res).toBeDefined())
+//   - Test Auditor QA: FALLA EN ROJO (Detecta el bug en Camino 1 porque res.penalizado da true en vez de false)
+
+// Mutante 2: Quita la negación '!' -> if (cancelacionTardia && esEmergencia)
+//   - Test Zombi: PASA EN VERDE (Jamás probó el Camino 2 ni verificó el valor booleano)
+//   - Test Auditor QA: FALLA EN ROJO (Detecta el bug en Camino 2 y Camino 3 de inmediato)
+
+// Mutante 3: Borra la llamada a aplicarPenalizacion() dentro del if
+//   - Test Zombi: PASA EN VERDE (No utiliza espía/mock para verificar efectos secundarios)
+//   - Test Auditor QA: FALLA EN ROJO (spyPenalizacion.llamadas.length vale 0 en vez de 1)`
+          };
+          return codigos[this.archivoCodigoActivo] || codigos.reglas;
+        }
+      };
+    }
+  </script>
+</body>
+</html>
