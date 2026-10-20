@@ -974,6 +974,24 @@ all files                | 100.00 |   100.00 |  100.00 | (19 passed, 0 failed)</
                     class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
               tests/mutacion_qa.js
             </button>
+            <button type="button"
+                    @click="archivoCodigoActivo = 'java_reglas'"
+                    :class="archivoCodigoActivo === 'java_reglas' ? 'bg-emerald-400 text-slate-950 font-bold' : 'bg-emerald-950 text-emerald-300 border border-emerald-700 hover:bg-emerald-900'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              [JAVA 17] ReglasCitas.java
+            </button>
+            <button type="button"
+                    @click="archivoCodigoActivo = 'java_tests'"
+                    :class="archivoCodigoActivo === 'java_tests' ? 'bg-emerald-400 text-slate-950 font-bold' : 'bg-emerald-950 text-emerald-300 border border-emerald-700 hover:bg-emerald-900'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              [JAVA 17] ReglasCitasTest.java
+            </button>
+            <button type="button"
+                    @click="archivoCodigoActivo = 'java_server'"
+                    :class="archivoCodigoActivo === 'java_server' ? 'bg-emerald-400 text-slate-950 font-bold' : 'bg-emerald-950 text-emerald-300 border border-emerald-700 hover:bg-emerald-900'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-mono-code transition">
+              [JAVA 17] ServidorCitasJava.java
+            </button>
           </div>
         </div>
 
@@ -1484,6 +1502,12 @@ all files                | 100.00 |   100.00 |  100.00 | (19 passed, 0 failed)</
             return 'QUÉ HACE ESTE MÓDULO (tests/reglasCitas.test.js): Ejecuta las 19 pruebas unitarias matemáticas cubriendo el 100% de ramas y sub-condiciones booleanas (MC/DC) con oráculos estrictos (assert.strictEqual) y funciones espía (mock).';
           } else if (this.archivoCodigoActivo === 'server') { // Explicación de src/server.js y src/db.js
             return 'QUÉ HACE ESTE MÓDULO (src/server.js y src/db.js): Levanta el servidor Express y HTTP nativo en 0.0.0.0:3000 para GitHub Codespaces, valida las reglas antes de insertar o cancelar citas y persiste los datos en SQLite.';
+          } else if (this.archivoCodigoActivo === 'java_reglas') { // Explicación de ReglasCitas.java
+            return 'MIGRACIÓN A JAVA 17 (ReglasCitas.java y ModelosCita.java): Traduce las 4 reglas críticas a métodos estáticos con records inmutables e interfaz funcional Runnable, conservando exactamente la misma Complejidad Ciclomática de McCabe V(G).';
+          } else if (this.archivoCodigoActivo === 'java_tests') { // Explicación de ReglasCitasTest.java
+            return 'MIGRACIÓN A JAVA 17 (ReglasCitasTest.java y MutacionQATest.java): Ejecuta en la JVM los 19 tests matemáticos con AtomicInteger como espía (mock) y oráculos estrictos assertIguales, logrando 100% de cobertura en ramas y 3/3 mutantes detectados.';
+          } else if (this.archivoCodigoActivo === 'java_server') { // Explicación de ServidorCitasJava.java
+            return 'MIGRACIÓN A JAVA 17 (ServidorCitasJava.java y BaseDeDatosCitas.java): Reemplaza Express por com.sun.net.httpserver.HttpServer en 0.0.0.0:3000 y utiliza JDBC SQLite con respaldo sincronizado en memoria.';
           } // Explicación de tests/mutacion_qa.js
           return 'QUÉ HACE ESTE MÓDULO (tests/mutacion_qa.js): Siembra 3 mutaciones (bugs intencionales) en la función de penalización tardía para demostrar que el Test Zombi detecta 0/3 (0%) mientras la Suite del Auditor QA detecta 3/3 (100%).';
         }, // Fin de obtenerExplicacionArchivoActivo
@@ -1594,6 +1618,54 @@ function procesarCreacionCita(body) { // Recibe el JSON enviado desde el formula
 // Mutante 3: Borra la llamada a aplicarPenalizacion() dentro del if
 //   - Test Zombi: PASA EN VERDE (No utiliza espía/mock para verificar efectos secundarios)
 //   - Test Auditor QA: FALLA EN ROJO (spyPenalizacion.llamadas.length vale 0 en vez de 1)`
+,
+            java_reglas: `// === MIGRACIÓN A JAVA 17: ReglasCitas.java (Comentado Línea por Línea) ===
+package com.mediqa; // Paquete principal de la aplicación en Java 17
+
+public class ReglasCitas { // Clase con los métodos puros auditados bajo McCabe V(G) <= 6
+
+    // REGLA 4 (CASO ESTRELLA DIAPOSITIVA 8): Penalización Tardía (< 24h) [V(G) = 3]
+    public static ResultadoCancelacion evaluarPenalizacionCancelacion( // Firma tipada con record inmutable
+        boolean cancelacionTardia, // Predicado P1: true si cancela con menos de 24 horas
+        boolean esEmergencia, // Predicado P2 (negado como !esEmergencia): true si es urgencia médica
+        Runnable aplicarPenalizacion // Interfaz funcional Runnable (reemplaza al callback de JS)
+    ) { // Inicio del método evaluarPenalizacionCancelacion
+        if (cancelacionTardia && !esEmergencia) { // Nodos Predicado P1 y P2 -> V(G) = P + 1 = 2 + 1 = 3
+            aplicarPenalizacion.run(); // Camino 3 (Nodo N4): Ejecuta el cobro de penalización
+            return new ResultadoCancelacion(true, 25, "PENALIZACION_APLICADA", "Cargo de $25.00 aplicado."); // Multa $25
+        } // Fin del condicional if
+        return new ResultadoCancelacion(false, 0, "SIN_PENALIZACION", "Sin cargos de penalización."); // Caminos 1 y 2 ($0)
+    } // Fin del método evaluarPenalizacionCancelacion
+}`,
+            java_tests: `// === MIGRACIÓN A JAVA 17: ReglasCitasTest.java (19 Tests + Espía AtomicInteger) ===
+// Camino 1 [cancelacionTardia = false]: Cortocircuito, no cobra multa
+AtomicInteger spyCamino1 = new AtomicInteger(0); // Crea espía atómico en 0 para contar ejecuciones de Runnable
+ResultadoCancelacion res1 = ReglasCitas.evaluarPenalizacionCancelacion(false, false, spyCamino1::incrementAndGet); // Ejecuta Camino 1
+assertIguales(false, res1.penalizado(), "Camino 1: penalizado debe ser false"); // Oráculo 1: booleano exacto
+assertIguales(0, res1.montoPenalizacion(), "Camino 1: monto debe ser 0"); // Oráculo 2: monto exacto $0
+assertIguales(0, spyCamino1.get(), "Camino 1: callback ejecutado 0 veces"); // Oráculo 3: verifica espía en 0
+
+// Camino 2 [cancelacionTardia = true, esEmergencia = true]: Exento por emergencia médica
+AtomicInteger spyCamino2 = new AtomicInteger(0); // Espía en 0 para el Camino 2
+ResultadoCancelacion res2 = ReglasCitas.evaluarPenalizacionCancelacion(true, true, spyCamino2::incrementAndGet); // Ejecuta Camino 2
+assertIguales(false, res2.penalizado(), "Camino 2: exento por emergencia"); // Oráculo 1: false
+assertIguales(0, res2.montoPenalizacion(), "Camino 2: monto $0"); // Oráculo 2: $0
+assertIguales(0, spyCamino2.get(), "Camino 2: callback ejecutado 0 veces"); // Oráculo 3: 0 llamadas
+
+// Camino 3 [cancelacionTardia = true, esEmergencia = false]: Aplica multa de $25
+AtomicInteger spyCamino3 = new AtomicInteger(0); // Espía en 0 que debe subir a 1
+ResultadoCancelacion res3 = ReglasCitas.evaluarPenalizacionCancelacion(true, false, spyCamino3::incrementAndGet); // Ejecuta Camino 3
+assertIguales(true, res3.penalizado(), "Camino 3: penalizado true"); // Oráculo 1: true
+assertIguales(25, res3.montoPenalizacion(), "Camino 3: multa exacta de $25"); // Oráculo 2: $25
+assertIguales(1, spyCamino3.get(), "Camino 3: aplicarPenalizacion.run() ejecutado 1 vez"); // Oráculo 3: 1 llamada`,
+            java_server: `// === MIGRACIÓN A JAVA 17: ServidorCitasJava.java (HttpServer en 0.0.0.0:3000) ===
+int puerto = Integer.parseInt(System.getenv().getOrDefault("PORT", "3000")); // Toma el puerto 3000 por defecto
+BaseDeDatosCitas db = new BaseDeDatosCitas(); // Inicializa persistencia JDBC SQLite + Respaldo en memoria
+ServidorCitasJava servicio = new ServidorCitasJava(db); // Instancia el controlador REST en Java
+HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", puerto), 0); // Escucha en 0.0.0.0:3000 para Codespaces
+server.createContext("/", exchange -> { /* Sirve public/index.html */ }); // Ruta principal de la aplicación web
+server.createContext("/api/citas", exchange -> { /* Atiende GET /api/citas, POST /api/citas y cancelar */ }); // API REST
+server.start(); // Arranca el servidor HTTP nativo de Java 17 sin requerir dependencias externas`
           };
           return codigos[this.archivoCodigoActivo] || codigos.reglas;
         }
